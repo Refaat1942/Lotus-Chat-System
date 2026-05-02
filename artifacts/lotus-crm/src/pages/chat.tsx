@@ -12,7 +12,7 @@ import {
   getListConversationsQueryKey,
   getGetConversationQueryKey
 } from "@workspace/api-client-react";
-import { useConversationSocket } from "@/hooks/use-socket";
+import { useConversationSocket, useTypingEmit, useTypingIndicator } from "@/hooks/use-socket";
 import { format, parseISO } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -165,7 +165,7 @@ export default function ChatPage() {
 
       {/* Center - Chat Area */}
       {selectedConvId ? (
-        <ChatCenter conversationId={selectedConvId} currentUserId={user?.id} />
+        <ChatCenter conversationId={selectedConvId} currentUserId={user?.id} currentUserName={user?.name ?? undefined} />
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center bg-muted/10 text-muted-foreground border-r border-border">
           <MessageSquarePlus className="h-12 w-12 mb-4 opacity-20" />
@@ -182,7 +182,7 @@ export default function ChatPage() {
   );
 }
 
-function ChatCenter({ conversationId, currentUserId }: { conversationId: number, currentUserId?: number }) {
+function ChatCenter({ conversationId, currentUserId, currentUserName }: { conversationId: number, currentUserId?: number, currentUserName?: string }) {
   const [message, setMessage] = useState("");
   const [isNote, setIsNote] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -197,6 +197,9 @@ function ChatCenter({ conversationId, currentUserId }: { conversationId: number,
     query: { enabled: !!conversationId, queryKey: getListMessagesQueryKey(conversationId) }
   });
 
+  // Typing indicator state
+  const { typingAgent, handleTyping } = useTypingIndicator();
+
   // Real-time: listen for new messages on this conversation via Socket.io
   const handleNewMessage = useCallback((msg: unknown) => {
     queryClient.setQueryData(
@@ -206,7 +209,10 @@ function ChatCenter({ conversationId, currentUserId }: { conversationId: number,
     queryClient.invalidateQueries({ queryKey: getListConversationsQueryKey() });
   }, [conversationId, queryClient]);
 
-  useConversationSocket(conversationId, handleNewMessage);
+  useConversationSocket(conversationId, handleNewMessage, handleTyping, currentUserName);
+
+  // Emit typing events using the authenticated current user's name
+  const emitTyping = useTypingEmit(conversationId, currentUserName);
 
   const sendMessageMut = useSendMessage();
   const resolveMut = useResolveConversation();
@@ -303,6 +309,20 @@ function ChatCenter({ conversationId, currentUserId }: { conversationId: number,
       {/* Messages */}
       <ScrollArea className="flex-1 p-4 bg-muted/10" ref={scrollRef}>
         <div className="space-y-4 max-w-3xl mx-auto pb-4">
+          {typingAgent && (
+            <div className="flex justify-start" data-testid="typing-indicator">
+              <div className="flex flex-col gap-1 items-start">
+                <div className="px-4 py-2.5 rounded-2xl rounded-bl-sm bg-card border border-border shadow-sm flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground italic">{typingAgent} is typing</span>
+                  <span className="flex gap-0.5 items-center">
+                    <span className="w-1 h-1 rounded-full bg-muted-foreground animate-bounce [animation-delay:0ms]" />
+                    <span className="w-1 h-1 rounded-full bg-muted-foreground animate-bounce [animation-delay:150ms]" />
+                    <span className="w-1 h-1 rounded-full bg-muted-foreground animate-bounce [animation-delay:300ms]" />
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
           {messages?.map((msg) => {
             const isMe = msg.senderType === "agent";
             const isSystem = msg.senderType === "system";
@@ -366,7 +386,7 @@ function ChatCenter({ conversationId, currentUserId }: { conversationId: number,
             )}
             <Textarea
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) => { setMessage(e.target.value); emitTyping(); }}
               onKeyDown={handleKeyDown}
               placeholder={isNote ? "Type an internal note..." : "Type a message..."}
               className="min-h-[80px] border-0 focus-visible:ring-0 resize-none rounded-none text-sm p-3 bg-transparent"
