@@ -37,3 +37,8 @@ externalPort = 3000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.production]
+JWT_SECRET = "lotus-prod-7f3a9b2c8e4d1f6a5b9c8d7e2f4a1b3c9d8e7f6a5b4c3d2e1f-pharma-crm-2026"
