@@ -4,7 +4,17 @@ import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
-const JWT_SECRET = process.env["JWT_SECRET"] || "lotus-secret-key-change-in-production";
+const JWT_SECRET_RAW = process.env["JWT_SECRET"];
+
+if (!JWT_SECRET_RAW) {
+  if (process.env["NODE_ENV"] === "production") {
+    throw new Error("JWT_SECRET environment variable is required in production");
+  }
+  // In development, log a warning but allow startup with a generated secret
+  process.stderr.write("[WARN] JWT_SECRET is not set — using insecure development secret. Set JWT_SECRET in .env for consistent sessions.\n");
+}
+
+export const JWT_SECRET = JWT_SECRET_RAW ?? "dev-only-lotus-crm-secret-not-for-production";
 
 export interface AuthRequest extends Request {
   user?: typeof usersTable.$inferSelect;
@@ -39,5 +49,3 @@ export function requireAdmin(req: AuthRequest, res: Response, next: NextFunction
   }
   next();
 }
-
-export { JWT_SECRET };

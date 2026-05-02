@@ -1,19 +1,18 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { 
   useListConversations, 
   useGetConversation, 
   useListMessages, 
   useSendMessage,
-  useUpdateConversation,
   useAssignConversation,
   useResolveConversation,
-  useListTags,
   useListQuickReplies,
   useGetMe,
   getListMessagesQueryKey,
   getListConversationsQueryKey,
   getGetConversationQueryKey
 } from "@workspace/api-client-react";
+import { useConversationSocket } from "@/hooks/use-socket";
 import { format, parseISO } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -76,7 +75,7 @@ export default function ChatPage() {
         <div className="p-4 border-b border-border flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-lg tracking-tight">Inbox</h2>
-            <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
               <SelectTrigger className="w-[110px] h-8 text-xs bg-background">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -197,6 +196,17 @@ function ChatCenter({ conversationId, currentUserId }: { conversationId: number,
   const { data: messages, isLoading: msgsLoading } = useListMessages(conversationId, {
     query: { enabled: !!conversationId, queryKey: getListMessagesQueryKey(conversationId) }
   });
+
+  // Real-time: listen for new messages on this conversation via Socket.io
+  const handleNewMessage = useCallback((msg: unknown) => {
+    queryClient.setQueryData(
+      getListMessagesQueryKey(conversationId),
+      (old: unknown[] | undefined) => old ? [...old, msg] : [msg],
+    );
+    queryClient.invalidateQueries({ queryKey: getListConversationsQueryKey() });
+  }, [conversationId, queryClient]);
+
+  useConversationSocket(conversationId, handleNewMessage);
 
   const sendMessageMut = useSendMessage();
   const resolveMut = useResolveConversation();

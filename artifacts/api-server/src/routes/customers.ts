@@ -1,30 +1,24 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { customersTable, conversationsTable, usersTable } from "@workspace/db";
-import { eq, ilike, sql } from "drizzle-orm";
+import { customersTable, conversationsTable } from "@workspace/db";
+import { eq, ilike, sql, and, SQL } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
 
 const router = Router();
 
 router.get("/customers", requireAuth, async (req, res) => {
   const { search, tag, branch } = req.query as Record<string, string>;
-  let query = db.select().from(customersTable);
-  const conditions: ReturnType<typeof ilike>[] = [];
+
+  const conditions: SQL[] = [];
   if (search) conditions.push(ilike(customersTable.name, `%${search}%`));
-  if (branch) conditions.push(eq(customersTable.branch, branch) as ReturnType<typeof ilike>);
-  if (tag) {
-    conditions.push(sql`${customersTable.tags} @> ARRAY[${tag}]::text[]` as unknown as ReturnType<typeof ilike>);
-  }
-  if (conditions.length > 0) {
-    const [first, ...rest] = conditions;
-    let q = query.where(first);
-    for (const c of rest) q = q.where(c);
-    const customers = await q.orderBy(customersTable.createdAt);
-    res.json(customers);
-  } else {
-    const customers = await query.orderBy(customersTable.createdAt);
-    res.json(customers);
-  }
+  if (branch) conditions.push(eq(customersTable.branch, branch));
+  if (tag) conditions.push(sql`${customersTable.tags} @> ARRAY[${tag}]::text[]`);
+
+  const customers = await db.select().from(customersTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(customersTable.createdAt);
+
+  res.json(customers);
 });
 
 router.post("/customers", requireAuth, async (req, res) => {

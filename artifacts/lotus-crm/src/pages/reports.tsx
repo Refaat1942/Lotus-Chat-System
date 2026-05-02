@@ -2,7 +2,8 @@ import React from "react";
 import { 
   useGetAgentPerformance, 
   useGetChatsOverTime,
-  useExportReport
+  useExportReport,
+  getExportReportQueryKey
 } from "@workspace/api-client-react";
 import { Download, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,27 +39,32 @@ export default function ReportsPage() {
   const { data: agentPerf, isLoading: agentLoading } = useGetAgentPerformance();
   const { data: chatsOverTime, isLoading: chartsLoading } = useGetChatsOverTime();
   const { toast } = useToast();
-  const exportMut = useExportReport();
+  const [exporting, setExporting] = React.useState(false);
+  const { refetch: fetchExport } = useExportReport({
+    query: { queryKey: getExportReportQueryKey(), enabled: false }
+  });
 
-  const handleExport = () => {
-    exportMut.mutate(undefined, {
-      onSuccess: (csvData) => {
-        // Create a blob and trigger download
-        const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', `lotus_report_${format(new Date(), 'yyyy-MM-dd')}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast({ title: "Report exported successfully" });
-      },
-      onError: () => {
-        toast({ title: "Failed to export report", variant: "destructive" });
-      }
-    });
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const { data: csvData, error } = await fetchExport();
+      if (error) throw error;
+      const blob = new Blob([csvData ?? ""], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `lotus_report_${format(new Date(), "yyyy-MM-dd")}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast({ title: "Report exported successfully" });
+    } catch {
+      toast({ title: "Failed to export report", variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -68,9 +74,9 @@ export default function ReportsPage() {
           <h2 className="text-3xl font-bold tracking-tight">Performance Reports</h2>
           <p className="text-muted-foreground">Analyze team efficiency and conversation volume.</p>
         </div>
-        <Button onClick={handleExport} disabled={exportMut.isPending} variant="outline" className="bg-card">
+        <Button onClick={handleExport} disabled={exporting} variant="outline" className="bg-card">
           <Download className="mr-2 h-4 w-4" />
-          {exportMut.isPending ? "Exporting..." : "Export CSV"}
+          {exporting ? "Exporting..." : "Export CSV"}
         </Button>
       </div>
 

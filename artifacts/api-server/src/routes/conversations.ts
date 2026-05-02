@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { conversationsTable, customersTable, usersTable, messagesTable } from "@workspace/db";
+import { conversationsTable, customersTable, usersTable } from "@workspace/db";
 import { eq, and, ilike, desc } from "drizzle-orm";
 import { requireAuth, AuthRequest } from "../middlewares/auth";
 import type { Server as IOServer } from "socket.io";
@@ -40,13 +40,13 @@ async function getConversationWithRelations(id: number) {
     .leftJoin(customersTable, eq(conversationsTable.customerId, customersTable.id))
     .leftJoin(usersTable, eq(conversationsTable.assignedAgentId, usersTable.id))
     .where(eq(conversationsTable.id, id));
-  return rows[0] || null;
+  return rows[0] ?? null;
 }
 
 router.get("/conversations", requireAuth, async (req: AuthRequest, res) => {
   const { status, agentId, tag, search } = req.query as Record<string, string>;
 
-  let baseQuery = db.select({
+  const baseQuery = db.select({
     id: conversationsTable.id,
     customerId: conversationsTable.customerId,
     assignedAgentId: conversationsTable.assignedAgentId,
@@ -86,9 +86,9 @@ router.get("/conversations", requireAuth, async (req: AuthRequest, res) => {
     conditions.push(eq(conversationsTable.assignedAgentId, req.user.id));
   }
 
-  const rows = conditions.length > 0
-    ? await baseQuery.where(and(...conditions)).orderBy(desc(conversationsTable.lastMessageAt))
-    : await baseQuery.orderBy(desc(conversationsTable.lastMessageAt));
+  const rows = await baseQuery
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(conversationsTable.lastMessageAt));
 
   res.json(rows);
 });
@@ -103,15 +103,25 @@ router.post("/conversations", requireAuth, async (req, res) => {
   res.status(201).json(full);
 });
 
-router.get("/conversations/:id", requireAuth, async (req, res) => {
+router.get("/conversations/:id", requireAuth, async (req: AuthRequest, res) => {
   const id = Number(req.params.id);
   const conv = await getConversationWithRelations(id);
   if (!conv) { res.status(404).json({ error: "Not found" }); return; }
+  // Agents can only view their own assigned conversations
+  if (req.user?.role === "agent" && conv.assignedAgentId !== req.user.id) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   res.json(conv);
 });
 
-router.put("/conversations/:id", requireAuth, async (req, res) => {
+router.put("/conversations/:id", requireAuth, async (req: AuthRequest, res) => {
   const id = Number(req.params.id);
+  const existing = await getConversationWithRelations(id);
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+  if (req.user?.role === "agent" && existing.assignedAgentId !== req.user.id) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
   const { tags, status, assignedAgentId } = req.body;
   const updates: Record<string, unknown> = {};
   if (tags !== undefined) updates.tags = tags;
@@ -119,28 +129,35 @@ router.put("/conversations/:id", requireAuth, async (req, res) => {
   if (assignedAgentId !== undefined) updates.assignedAgentId = assignedAgentId;
   await db.update(conversationsTable).set(updates).where(eq(conversationsTable.id, id));
   const full = await getConversationWithRelations(id);
-  if (!full) { res.status(404).json({ error: "Not found" }); return; }
   res.json(full);
 });
 
-router.post("/conversations/:id/assign", requireAuth, async (req, res) => {
+router.post("/conversations/:id/assign", requireAuth, async (req: AuthRequest, res) => {
   const id = Number(req.params.id);
   const { agentId } = req.body;
+  const existing = await getConversationWithRelations(id);
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+  if (req.user?.role === "agent" && existing.assignedAgentId !== req.user.id) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
   await db.update(conversationsTable).set({ assignedAgentId: agentId || null }).where(eq(conversationsTable.id, id));
   const full = await getConversationWithRelations(id);
-  if (!full) { res.status(404).json({ error: "Not found" }); return; }
 
-  const io: IOServer = (req as AuthRequest & { app: { get: (k: string) => IOServer } }).app.get("io");
+  const io = req.app.get("io") as IOServer | undefined;
   if (io) io.to(`conv:${id}`).emit("agent_assigned", { conversationId: id, agentId });
 
   res.json(full);
 });
 
-router.post("/conversations/:id/resolve", requireAuth, async (req, res) => {
+router.post("/conversations/:id/resolve", requireAuth, async (req: AuthRequest, res) => {
   const id = Number(req.params.id);
+  const existing = await getConversationWithRelations(id);
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+  if (req.user?.role === "agent" && existing.assignedAgentId !== req.user.id) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
   await db.update(conversationsTable).set({ status: "resolved", resolvedAt: new Date() }).where(eq(conversationsTable.id, id));
   const full = await getConversationWithRelations(id);
-  if (!full) { res.status(404).json({ error: "Not found" }); return; }
   res.json(full);
 });
 
