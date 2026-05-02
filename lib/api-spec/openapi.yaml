@@ -439,6 +439,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/Conversation"
 
+    patch:
+      operationId: patchConversation
+      tags: [conversations]
+      summary: Partially update a conversation (status, tags, assignedAgentId)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateConversationBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
   /conversations/{id}/assign:
     post:
       operationId: assignConversation

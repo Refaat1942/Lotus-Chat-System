@@ -133,6 +133,24 @@ router.put("/conversations/:id", requireAuth, async (req: AuthRequest, res) => {
   res.json(full);
 });
 
+router.patch("/conversations/:id", requireAuth, async (req: AuthRequest, res) => {
+  const id = Number(req.params.id);
+  const existing = await getConversationWithRelations(id);
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+  if (req.user?.role === "agent" && existing.assignedAgentId !== null && existing.assignedAgentId !== req.user.id) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+  const { tags, status, assignedAgentId } = req.body;
+  const updates: Record<string, unknown> = {};
+  if (tags !== undefined) updates.tags = tags;
+  if (status !== undefined) updates.status = status;
+  if (assignedAgentId !== undefined) updates.assignedAgentId = assignedAgentId;
+  if (Object.keys(updates).length === 0) { res.json(existing); return; }
+  await db.update(conversationsTable).set(updates).where(eq(conversationsTable.id, id));
+  const full = await getConversationWithRelations(id);
+  res.json(full);
+});
+
 router.post("/conversations/:id/assign", requireAuth, async (req: AuthRequest, res) => {
   const id = Number(req.params.id);
   const { agentId } = req.body;

@@ -6,6 +6,9 @@ import {
   useSendMessage,
   useAssignConversation,
   useResolveConversation,
+  usePatchConversation,
+  useListUsers,
+  useListTags,
   useListQuickReplies,
   useGetMe,
   getListMessagesQueryKey,
@@ -17,20 +20,18 @@ import { format, parseISO } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Search,
-  Filter,
   CheckCircle2,
   Clock,
-  MoreVertical,
   Paperclip,
   Send,
-  User,
   Phone,
   MapPin,
   Tag as TagIcon,
-  ChevronRight,
-  Info,
   MessageSquarePlus,
-  MessageSquare
+  MessageSquare,
+  X,
+  Plus,
+  ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -437,11 +438,17 @@ function ChatCenter({ conversationId, currentUserId, currentUserName, message, s
 }
 
 function ChatContextPanel({ conversationId, onInsertReply }: { conversationId: number, onInsertReply: (text: string) => void }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [tagInput, setTagInput] = useState("");
+  const [showTagInput, setShowTagInput] = useState(false);
   const { data: conv } = useGetConversation(conversationId, {
     query: { enabled: !!conversationId, queryKey: getGetConversationQueryKey(conversationId) }
   });
   const { data: quickReplies } = useListQuickReplies();
   const [replySearch, setReplySearch] = useState("");
+  const { data: users } = useListUsers();
+  const { data: allTags } = useListTags();
   const customer = conv?.customer;
 
   const filteredReplies = (quickReplies ?? []).filter((qr) => {
@@ -449,6 +456,62 @@ function ChatContextPanel({ conversationId, onInsertReply }: { conversationId: n
     const q = replySearch.toLowerCase();
     return qr.title.toLowerCase().includes(q) || qr.body.toLowerCase().includes(q);
   });
+
+  const patchMut = usePatchConversation();
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: getGetConversationQueryKey(conversationId) });
+    queryClient.invalidateQueries({ queryKey: getListConversationsQueryKey() });
+  };
+
+  const handleStatusChange = (status: string) => {
+    patchMut.mutate(
+      { id: conversationId, data: { status: status as "open" | "pending" | "resolved" } },
+      {
+        onSuccess: () => { invalidate(); toast({ title: "Status updated" }); },
+        onError: () => toast({ title: "Failed to update status", variant: "destructive" })
+      }
+    );
+  };
+
+  const handleAssign = (value: string) => {
+    const assignedAgentId = value === "unassigned" ? null : Number(value);
+    patchMut.mutate(
+      { id: conversationId, data: { assignedAgentId } },
+      {
+        onSuccess: () => { invalidate(); toast({ title: assignedAgentId ? "Conversation assigned" : "Conversation unassigned" }); },
+        onError: () => toast({ title: "Failed to assign conversation", variant: "destructive" })
+      }
+    );
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    const newTags = (conv?.tags || []).filter(t => t !== tag);
+    patchMut.mutate(
+      { id: conversationId, data: { tags: newTags } },
+      {
+        onSuccess: () => invalidate(),
+        onError: () => toast({ title: "Failed to remove tag", variant: "destructive" })
+      }
+    );
+  };
+
+  const handleAddTag = (tag: string) => {
+    const trimmed = tag.trim();
+    if (!trimmed) return;
+    const currentTags = conv?.tags || [];
+    if (currentTags.includes(trimmed)) return;
+    const newTags = [...currentTags, trimmed];
+    patchMut.mutate(
+      { id: conversationId, data: { tags: newTags } },
+      {
+        onSuccess: () => { invalidate(); setTagInput(""); setShowTagInput(false); },
+        onError: () => toast({ title: "Failed to add tag", variant: "destructive" })
+      }
+    );
+  };
+
+  const suggestedTags = allTags?.filter(t => !conv?.tags?.includes(t.name)) || [];
 
   return (
     <div className="w-80 flex-shrink-0 flex flex-col bg-sidebar overflow-hidden">
@@ -460,11 +523,126 @@ function ChatContextPanel({ conversationId, onInsertReply }: { conversationId: n
         
         <TabsContent value="details" className="flex-1 overflow-y-auto m-0 p-0">
           <div className="p-6 space-y-6">
+            {/* Conversation Management */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Conversation</h4>
+              
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-muted-foreground">Status</label>
+                  <Select value={conv?.status || "open"} onValueChange={handleStatusChange} disabled={patchMut.isPending}>
+                    <SelectTrigger className="h-8 text-xs bg-background" data-testid="select-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="open">Open</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="resolved">Resolved</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-muted-foreground">Assigned To</label>
+                  <Select
+                    value={conv?.assignedAgentId ? String(conv.assignedAgentId) : "unassigned"}
+                    onValueChange={handleAssign}
+                    disabled={patchMut.isPending}
+                  >
+                    <SelectTrigger className="h-8 text-xs bg-background" data-testid="select-assignee">
+                      <SelectValue placeholder="Unassigned" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {users?.map(u => (
+                        <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Conversation Tags */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tags</h4>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setShowTagInput(!showTagInput)}
+                  data-testid="btn-add-tag"
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {conv?.tags?.map((tag, idx) => (
+                  <Badge key={idx} variant="secondary" className="font-normal text-xs pr-1 gap-1">
+                    {tag}
+                    <button
+                      onClick={() => handleRemoveTag(tag)}
+                      className="ml-0.5 hover:text-destructive transition-colors"
+                      data-testid={`btn-remove-tag-${tag}`}
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </Badge>
+                ))}
+                {!conv?.tags?.length && !showTagInput && (
+                  <span className="text-xs text-muted-foreground">No tags</span>
+                )}
+              </div>
+              {showTagInput && (
+                <div className="space-y-2">
+                  <div className="flex gap-1">
+                    <Input
+                      value={tagInput}
+                      onChange={e => setTagInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddTag(tagInput); } }}
+                      placeholder="Add tag..."
+                      className="h-7 text-xs bg-background"
+                      autoFocus
+                      data-testid="input-tag"
+                    />
+                    <Button
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => handleAddTag(tagInput)}
+                      disabled={!tagInput.trim() || patchMut.isPending}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  {suggestedTags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {suggestedTags.slice(0, 6).map(t => (
+                        <button
+                          key={t.id}
+                          onClick={() => handleAddTag(t.name)}
+                          className="text-[10px] px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
+                          data-testid={`btn-suggest-tag-${t.name}`}
+                        >
+                          {t.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Patient Info */}
             <div className="flex flex-col items-center text-center">
-              <Avatar className="h-20 w-20 mb-3 border-2 border-border shadow-sm">
-                <AvatarFallback className="text-xl bg-primary/10 text-primary">{customer?.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
+              <Avatar className="h-16 w-16 mb-3 border-2 border-border shadow-sm">
+                <AvatarFallback className="text-lg bg-primary/10 text-primary">{customer?.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
-              <h3 className="font-semibold text-lg">{customer?.name}</h3>
+              <h3 className="font-semibold text-base">{customer?.name}</h3>
               <p className="text-sm text-muted-foreground">Patient</p>
             </div>
 
@@ -483,21 +661,6 @@ function ChatContextPanel({ conversationId, onInsertReply }: { conversationId: n
                     <span>{customer.branch} Branch</span>
                   </div>
                 )}
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tags</h4>
-                <Button variant="ghost" size="icon" className="h-6 w-6"><TagIcon className="h-3 w-3" /></Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {customer?.tags?.map((tag, idx) => (
-                  <Badge key={idx} variant="secondary" className="font-normal text-xs">{tag}</Badge>
-                ))}
-                {!customer?.tags?.length && <span className="text-xs text-muted-foreground">No tags</span>}
               </div>
             </div>
 

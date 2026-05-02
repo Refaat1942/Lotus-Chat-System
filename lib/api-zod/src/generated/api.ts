@@ -384,6 +384,53 @@ export const UpdateConversationResponse = zod.object({
 });
 
 /**
+ * @summary Partially update a conversation (status, tags, assignedAgentId)
+ */
+export const PatchConversationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const PatchConversationBody = zod.object({
+  tags: zod.array(zod.string()).optional(),
+  status: zod.enum(["open", "resolved", "pending"]).optional(),
+  assignedAgentId: zod.number().nullish(),
+});
+
+export const PatchConversationResponse = zod.object({
+  id: zod.number(),
+  customerId: zod.number(),
+  customer: zod
+    .object({
+      id: zod.number(),
+      name: zod.string(),
+      phone: zod.string(),
+      branch: zod.string().optional(),
+      tags: zod.array(zod.string()).optional(),
+      notes: zod.string().optional(),
+      prescriptionNotes: zod.string().optional(),
+      createdAt: zod.coerce.date(),
+    })
+    .optional(),
+  assignedAgentId: zod.number().nullish(),
+  assignedAgent: zod
+    .object({
+      id: zod.number(),
+      name: zod.string(),
+      email: zod.string(),
+      role: zod.enum(["admin", "agent"]),
+      createdAt: zod.coerce.date(),
+    })
+    .nullish(),
+  status: zod.enum(["open", "resolved", "pending"]),
+  tags: zod.array(zod.string()),
+  lastMessage: zod.string().nullish(),
+  lastMessageAt: zod.coerce.date().nullish(),
+  unreadCount: zod.number(),
+  createdAt: zod.coerce.date(),
+  resolvedAt: zod.coerce.date().nullish(),
+});
+
+/**
  * @summary Assign conversation to agent
  */
 export const AssignConversationParams = zod.object({

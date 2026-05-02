@@ -1562,6 +1562,93 @@ export const useUpdateConversation = <
 };
 
 /**
+ * @summary Partially update a conversation (status, tags, assignedAgentId)
+ */
+export const getPatchConversationUrl = (id: number) => {
+  return `/api/conversations/${id}`;
+};
+
+export const patchConversation = async (
+  id: number,
+  updateConversationBody: UpdateConversationBody,
+  options?: RequestInit,
+): Promise<Conversation> => {
+  return customFetch<Conversation>(getPatchConversationUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateConversationBody),
+  });
+};
+
+export const getPatchConversationMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof patchConversation>>,
+    TError,
+    { id: number; data: BodyType<UpdateConversationBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof patchConversation>>,
+  TError,
+  { id: number; data: BodyType<UpdateConversationBody> },
+  TContext
+> => {
+  const mutationKey = ["patchConversation"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof patchConversation>>,
+    { id: number; data: BodyType<UpdateConversationBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return patchConversation(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PatchConversationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof patchConversation>>
+>;
+export type PatchConversationMutationBody = BodyType<UpdateConversationBody>;
+export type PatchConversationMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Partially update a conversation (status, tags, assignedAgentId)
+ */
+export const usePatchConversation = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof patchConversation>>,
+    TError,
+    { id: number; data: BodyType<UpdateConversationBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof patchConversation>>,
+  TError,
+  { id: number; data: BodyType<UpdateConversationBody> },
+  TContext
+> => {
+  return useMutation(getPatchConversationMutationOptions(options));
+};
+
+/**
  * @summary Assign conversation to agent
  */
 export const getAssignConversationUrl = (id: number) => {

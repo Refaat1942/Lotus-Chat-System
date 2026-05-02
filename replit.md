@@ -62,6 +62,11 @@ Passwords seeded using PostgreSQL `pgcrypto` `crypt()` with blowfish (compatible
 - 6 tags: VIP, New, Complaint, Prescription, Follow-up, Urgent
 - 8 quick replies
 
+## Authorization Policy Notes
+
+- `GET /users` — requires `requireAuth` (any logged-in user, including agents). This allows agents to populate the assignee dropdown in the conversation panel. Full user records (name, email, role) are returned to all authenticated staff. This is intentional for internal CRM tooling where all staff are trusted employees.
+- `PATCH /conversations/:id` — any authenticated user can update conversations assigned to themselves or unassigned conversations. Agents are blocked (403) from patching conversations assigned to other agents. Admins can patch any conversation.
+
 ## Pages
 
 | Route        | Access     | Description                                  |

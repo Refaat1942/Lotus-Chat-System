@@ -7,7 +7,7 @@ import { requireAuth, requireAdmin, AuthRequest } from "../middlewares/auth";
 
 const router = Router();
 
-router.get("/users", requireAuth, requireAdmin, async (_req, res) => {
+router.get("/users", requireAuth, async (_req, res) => {
   const users = await db.select({
     id: usersTable.id,
     name: usersTable.name,
