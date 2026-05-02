@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "3U1Vym42TyTfFnOp4gca4"
+uri = "file://deploy/MIGRATION_GUIDE.md"
+type = "text"
+title = "Lotus CRM — VPS Migration Guide"
