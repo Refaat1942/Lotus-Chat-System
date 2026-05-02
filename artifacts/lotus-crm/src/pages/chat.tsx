@@ -61,7 +61,15 @@ export default function ChatPage() {
   const [selectedConvId, setSelectedConvId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "resolved" | "pending">("open");
+  const [message, setMessage] = useState("");
   const { data: user } = useGetMe();
+
+  const insertReply = useCallback((text: string) => {
+    setMessage((prev) => {
+      const trimmed = (prev ?? "").trim();
+      return trimmed.length ? `${trimmed}\n${text}` : text;
+    });
+  }, []);
 
   const { data: conversations, isLoading: convLoading } = useListConversations({
     status: statusFilter === "all" ? undefined : statusFilter,
@@ -165,7 +173,7 @@ export default function ChatPage() {
 
       {/* Center - Chat Area */}
       {selectedConvId ? (
-        <ChatCenter conversationId={selectedConvId} currentUserId={user?.id} currentUserName={user?.name ?? undefined} />
+        <ChatCenter conversationId={selectedConvId} currentUserId={user?.id} currentUserName={user?.name ?? undefined} message={message} setMessage={setMessage} />
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center bg-muted/10 text-muted-foreground border-r border-border">
           <MessageSquarePlus className="h-12 w-12 mb-4 opacity-20" />
@@ -176,14 +184,13 @@ export default function ChatPage() {
 
       {/* Right - Context Panel */}
       {selectedConvId && (
-        <ChatContextPanel conversationId={selectedConvId} />
+        <ChatContextPanel conversationId={selectedConvId} onInsertReply={insertReply} />
       )}
     </div>
   );
 }
 
-function ChatCenter({ conversationId, currentUserId, currentUserName }: { conversationId: number, currentUserId?: number, currentUserName?: string }) {
-  const [message, setMessage] = useState("");
+function ChatCenter({ conversationId, currentUserId, currentUserName, message, setMessage }: { conversationId: number, currentUserId?: number, currentUserName?: string, message: string, setMessage: React.Dispatch<React.SetStateAction<string>> }) {
   const [isNote, setIsNote] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
@@ -429,12 +436,19 @@ function ChatCenter({ conversationId, currentUserId, currentUserName }: { conver
   );
 }
 
-function ChatContextPanel({ conversationId }: { conversationId: number }) {
+function ChatContextPanel({ conversationId, onInsertReply }: { conversationId: number, onInsertReply: (text: string) => void }) {
   const { data: conv } = useGetConversation(conversationId, {
     query: { enabled: !!conversationId, queryKey: getGetConversationQueryKey(conversationId) }
   });
   const { data: quickReplies } = useListQuickReplies();
+  const [replySearch, setReplySearch] = useState("");
   const customer = conv?.customer;
+
+  const filteredReplies = (quickReplies ?? []).filter((qr) => {
+    if (!replySearch.trim()) return true;
+    const q = replySearch.toLowerCase();
+    return qr.title.toLowerCase().includes(q) || qr.body.toLowerCase().includes(q);
+  });
 
   return (
     <div className="w-80 flex-shrink-0 flex flex-col bg-sidebar overflow-hidden">
@@ -510,23 +524,43 @@ function ChatContextPanel({ conversationId }: { conversationId: number }) {
           </div>
         </TabsContent>
 
-        <TabsContent value="replies" className="flex-1 overflow-y-auto m-0 p-4 space-y-3">
-          <div className="relative mb-4">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input placeholder="Search replies..." className="pl-8 h-9 text-sm bg-background" />
-          </div>
-          {quickReplies?.map((qr) => (
-            <div key={qr.id} className="p-3 border border-border rounded-lg bg-card hover:border-primary/50 cursor-pointer transition-colors group">
-              <h5 className="font-medium text-sm mb-1">{qr.title}</h5>
-              <p className="text-xs text-muted-foreground line-clamp-2">{qr.body}</p>
-              <Button variant="ghost" size="sm" className="w-full mt-2 h-7 text-xs opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary hover:bg-primary/10">
-                Use Reply
-              </Button>
+        <TabsContent value="replies" className="flex-1 m-0 p-0 min-h-0 flex flex-col data-[state=inactive]:hidden">
+          <div className="p-4 pb-2 border-b border-border">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search replies..."
+                className="pl-8 h-9 text-sm bg-background"
+                value={replySearch}
+                onChange={(e) => setReplySearch(e.target.value)}
+                data-testid="input-quick-reply-search"
+              />
             </div>
-          ))}
-          {quickReplies?.length === 0 && (
-             <p className="text-sm text-muted-foreground text-center mt-8">No quick replies configured.</p>
-          )}
+          </div>
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="p-4 space-y-3">
+              {filteredReplies.map((qr) => (
+                <button
+                  key={qr.id}
+                  type="button"
+                  onClick={() => onInsertReply(qr.body)}
+                  className="w-full text-left p-3 border border-border rounded-lg bg-card hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-colors group focus:outline-none focus:ring-2 focus:ring-ring"
+                  data-testid={`btn-quick-reply-${qr.id}`}
+                >
+                  <h5 className="font-medium text-sm mb-1">{qr.title}</h5>
+                  <p className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">{qr.body}</p>
+                  <span className="block w-full mt-2 h-7 leading-7 text-xs opacity-0 group-hover:opacity-100 transition-opacity text-primary text-center font-medium">
+                    Click to insert
+                  </span>
+                </button>
+              ))}
+              {filteredReplies.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center mt-8">
+                  {replySearch ? "No matching replies." : "No quick replies configured."}
+                </p>
+              )}
+            </div>
+          </ScrollArea>
         </TabsContent>
       </Tabs>
     </div>
