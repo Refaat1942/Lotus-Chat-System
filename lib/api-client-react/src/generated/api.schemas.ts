@@ -25,17 +25,77 @@ export const UserRole = {
   agent: "agent",
 } as const;
 
+export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
+
+export const UserStatus = {
+  available: "available",
+  busy: "busy",
+  offline: "offline",
+} as const;
+
 export interface User {
   id: number;
   name: string;
   email: string;
   role: UserRole;
+  status: UserStatus;
   createdAt: string;
 }
 
 export interface AuthResponse {
   token: string;
   user: User;
+}
+
+export type UpdateUserStatusBodyStatus =
+  (typeof UpdateUserStatusBodyStatus)[keyof typeof UpdateUserStatusBodyStatus];
+
+export const UpdateUserStatusBodyStatus = {
+  available: "available",
+  busy: "busy",
+  offline: "offline",
+} as const;
+
+export interface UpdateUserStatusBody {
+  status: UpdateUserStatusBodyStatus;
+}
+
+export type SettingsAssignmentStrategy =
+  (typeof SettingsAssignmentStrategy)[keyof typeof SettingsAssignmentStrategy];
+
+export const SettingsAssignmentStrategy = {
+  round_robin: "round_robin",
+  least_busy: "least_busy",
+} as const;
+
+export interface Settings {
+  id: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  maxChatsPerAgent: number;
+  autoAssign: boolean;
+  assignmentStrategy: SettingsAssignmentStrategy;
+  updatedAt: string;
+}
+
+export type UpdateSettingsBodyAssignmentStrategy =
+  (typeof UpdateSettingsBodyAssignmentStrategy)[keyof typeof UpdateSettingsBodyAssignmentStrategy];
+
+export const UpdateSettingsBodyAssignmentStrategy = {
+  round_robin: "round_robin",
+  least_busy: "least_busy",
+} as const;
+
+export interface UpdateSettingsBody {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  maxChatsPerAgent?: number;
+  autoAssign?: boolean;
+  assignmentStrategy?: UpdateSettingsBodyAssignmentStrategy;
 }
 
 export type CreateUserBodyRole =
@@ -119,6 +179,7 @@ export interface Conversation {
   unreadCount: number;
   createdAt: string;
   resolvedAt?: string | null;
+  queuedAt?: string | null;
 }
 
 export interface CreateConversationBody {

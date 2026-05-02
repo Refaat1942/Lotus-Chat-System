@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
+import { AvailabilityToggle } from "@/components/availability-toggle";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -48,7 +49,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             ))}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter className="border-t border-border p-4 flex flex-col gap-4">
+        <SidebarFooter className="border-t border-border p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               <span className="text-sm font-medium leading-none">{user?.name}</span>
@@ -58,6 +59,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
           </div>
+          {user?.role === "agent" && (
+            <AvailabilityToggle />
+          )}
           <Button variant="outline" className="w-full justify-start text-muted-foreground hover:text-foreground" onClick={logout} data-testid="button-logout">
             <LogOut className="mr-2 h-4 w-4" />
             Log out

@@ -29,6 +29,7 @@ export const LoginResponse = zod.object({
     name: zod.string(),
     email: zod.string(),
     role: zod.enum(["admin", "agent"]),
+    status: zod.enum(["available", "busy", "offline"]),
     createdAt: zod.coerce.date(),
   }),
 });
@@ -41,6 +42,7 @@ export const GetMeResponse = zod.object({
   name: zod.string(),
   email: zod.string(),
   role: zod.enum(["admin", "agent"]),
+  status: zod.enum(["available", "busy", "offline"]),
   createdAt: zod.coerce.date(),
 });
 
@@ -52,6 +54,7 @@ export const ListUsersResponseItem = zod.object({
   name: zod.string(),
   email: zod.string(),
   role: zod.enum(["admin", "agent"]),
+  status: zod.enum(["available", "busy", "offline"]),
   createdAt: zod.coerce.date(),
 });
 export const ListUsersResponse = zod.array(ListUsersResponseItem);
@@ -78,6 +81,7 @@ export const GetUserResponse = zod.object({
   name: zod.string(),
   email: zod.string(),
   role: zod.enum(["admin", "agent"]),
+  status: zod.enum(["available", "busy", "offline"]),
   createdAt: zod.coerce.date(),
 });
 
@@ -100,6 +104,7 @@ export const UpdateUserResponse = zod.object({
   name: zod.string(),
   email: zod.string(),
   role: zod.enum(["admin", "agent"]),
+  status: zod.enum(["available", "busy", "offline"]),
   createdAt: zod.coerce.date(),
 });
 
@@ -224,6 +229,7 @@ export const GetCustomerConversationsResponseItem = zod.object({
       name: zod.string(),
       email: zod.string(),
       role: zod.enum(["admin", "agent"]),
+      status: zod.enum(["available", "busy", "offline"]),
       createdAt: zod.coerce.date(),
     })
     .nullish(),
@@ -234,6 +240,7 @@ export const GetCustomerConversationsResponseItem = zod.object({
   unreadCount: zod.number(),
   createdAt: zod.coerce.date(),
   resolvedAt: zod.coerce.date().nullish(),
+  queuedAt: zod.coerce.date().nullish(),
 });
 export const GetCustomerConversationsResponse = zod.array(
   GetCustomerConversationsResponseItem,
@@ -271,6 +278,7 @@ export const ListConversationsResponseItem = zod.object({
       name: zod.string(),
       email: zod.string(),
       role: zod.enum(["admin", "agent"]),
+      status: zod.enum(["available", "busy", "offline"]),
       createdAt: zod.coerce.date(),
     })
     .nullish(),
@@ -281,6 +289,7 @@ export const ListConversationsResponseItem = zod.object({
   unreadCount: zod.number(),
   createdAt: zod.coerce.date(),
   resolvedAt: zod.coerce.date().nullish(),
+  queuedAt: zod.coerce.date().nullish(),
 });
 export const ListConversationsResponse = zod.array(
   ListConversationsResponseItem,
@@ -324,6 +333,7 @@ export const GetConversationResponse = zod.object({
       name: zod.string(),
       email: zod.string(),
       role: zod.enum(["admin", "agent"]),
+      status: zod.enum(["available", "busy", "offline"]),
       createdAt: zod.coerce.date(),
     })
     .nullish(),
@@ -334,6 +344,7 @@ export const GetConversationResponse = zod.object({
   unreadCount: zod.number(),
   createdAt: zod.coerce.date(),
   resolvedAt: zod.coerce.date().nullish(),
+  queuedAt: zod.coerce.date().nullish(),
 });
 
 /**
@@ -371,6 +382,7 @@ export const UpdateConversationResponse = zod.object({
       name: zod.string(),
       email: zod.string(),
       role: zod.enum(["admin", "agent"]),
+      status: zod.enum(["available", "busy", "offline"]),
       createdAt: zod.coerce.date(),
     })
     .nullish(),
@@ -381,6 +393,7 @@ export const UpdateConversationResponse = zod.object({
   unreadCount: zod.number(),
   createdAt: zod.coerce.date(),
   resolvedAt: zod.coerce.date().nullish(),
+  queuedAt: zod.coerce.date().nullish(),
 });
 
 /**
@@ -418,6 +431,7 @@ export const PatchConversationResponse = zod.object({
       name: zod.string(),
       email: zod.string(),
       role: zod.enum(["admin", "agent"]),
+      status: zod.enum(["available", "busy", "offline"]),
       createdAt: zod.coerce.date(),
     })
     .nullish(),
@@ -428,6 +442,7 @@ export const PatchConversationResponse = zod.object({
   unreadCount: zod.number(),
   createdAt: zod.coerce.date(),
   resolvedAt: zod.coerce.date().nullish(),
+  queuedAt: zod.coerce.date().nullish(),
 });
 
 /**
@@ -463,6 +478,7 @@ export const AssignConversationResponse = zod.object({
       name: zod.string(),
       email: zod.string(),
       role: zod.enum(["admin", "agent"]),
+      status: zod.enum(["available", "busy", "offline"]),
       createdAt: zod.coerce.date(),
     })
     .nullish(),
@@ -473,6 +489,7 @@ export const AssignConversationResponse = zod.object({
   unreadCount: zod.number(),
   createdAt: zod.coerce.date(),
   resolvedAt: zod.coerce.date().nullish(),
+  queuedAt: zod.coerce.date().nullish(),
 });
 
 /**
@@ -504,6 +521,7 @@ export const ResolveConversationResponse = zod.object({
       name: zod.string(),
       email: zod.string(),
       role: zod.enum(["admin", "agent"]),
+      status: zod.enum(["available", "busy", "offline"]),
       createdAt: zod.coerce.date(),
     })
     .nullish(),
@@ -514,6 +532,7 @@ export const ResolveConversationResponse = zod.object({
   unreadCount: zod.number(),
   createdAt: zod.coerce.date(),
   resolvedAt: zod.coerce.date().nullish(),
+  queuedAt: zod.coerce.date().nullish(),
 });
 
 /**
@@ -677,3 +696,63 @@ export const GetRecentActivityResponseItem = zod.object({
 export const GetRecentActivityResponse = zod.array(
   GetRecentActivityResponseItem,
 );
+
+/**
+ * @summary Get chat-distribution settings
+ */
+export const getSettingsResponseMaxChatsPerAgentMax = 100;
+
+export const GetSettingsResponse = zod.object({
+  id: zod.number(),
+  maxChatsPerAgent: zod
+    .number()
+    .min(1)
+    .max(getSettingsResponseMaxChatsPerAgentMax),
+  autoAssign: zod.boolean(),
+  assignmentStrategy: zod.enum(["round_robin", "least_busy"]),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Update chat-distribution settings (admin)
+ */
+export const updateSettingsBodyMaxChatsPerAgentMax = 100;
+
+export const UpdateSettingsBody = zod.object({
+  maxChatsPerAgent: zod
+    .number()
+    .min(1)
+    .max(updateSettingsBodyMaxChatsPerAgentMax)
+    .optional(),
+  autoAssign: zod.boolean().optional(),
+  assignmentStrategy: zod.enum(["round_robin", "least_busy"]).optional(),
+});
+
+export const updateSettingsResponseMaxChatsPerAgentMax = 100;
+
+export const UpdateSettingsResponse = zod.object({
+  id: zod.number(),
+  maxChatsPerAgent: zod
+    .number()
+    .min(1)
+    .max(updateSettingsResponseMaxChatsPerAgentMax),
+  autoAssign: zod.boolean(),
+  assignmentStrategy: zod.enum(["round_robin", "least_busy"]),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Update the current agent's availability status
+ */
+export const UpdateMyStatusBody = zod.object({
+  status: zod.enum(["available", "busy", "offline"]),
+});
+
+export const UpdateMyStatusResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  email: zod.string(),
+  role: zod.enum(["admin", "agent"]),
+  status: zod.enum(["available", "busy", "offline"]),
+  createdAt: zod.coerce.date(),
+});

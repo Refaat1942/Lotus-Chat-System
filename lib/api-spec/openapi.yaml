@@ -26,6 +26,8 @@ tags:
     description: Quick reply templates
   - name: analytics
     description: Analytics and reports
+  - name: settings
+    description: System / chat-distribution settings
 
 paths:
   /healthz:
@@ -762,6 +764,61 @@ paths:
                 items:
                   $ref: "#/components/schemas/ActivityItem"
 
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get chat-distribution settings
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    put:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update chat-distribution settings (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSettingsBody"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
+  /users/me/status:
+    patch:
+      operationId: updateMyStatus
+      tags: [users]
+      summary: Update the current agent's availability status
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserStatusBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
   /reports/export:
     get:
       operationId: exportReport
@@ -836,6 +893,9 @@ components:
         role:
           type: string
           enum: [admin, agent]
+        status:
+          type: string
+          enum: [available, busy, offline]
         createdAt:
           type: string
           format: date-time
@@ -844,7 +904,54 @@ components:
         - name
         - email
         - role
+        - status
         - createdAt
+
+    UpdateUserStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [available, busy, offline]
+      required:
+        - status
+
+    Settings:
+      type: object
+      properties:
+        id:
+          type: integer
+        maxChatsPerAgent:
+          type: integer
+          minimum: 1
+          maximum: 100
+        autoAssign:
+          type: boolean
+        assignmentStrategy:
+          type: string
+          enum: [round_robin, least_busy]
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - maxChatsPerAgent
+        - autoAssign
+        - assignmentStrategy
+        - updatedAt
+
+    UpdateSettingsBody:
+      type: object
+      properties:
+        maxChatsPerAgent:
+          type: integer
+          minimum: 1
+          maximum: 100
+        autoAssign:
+          type: boolean
+        assignmentStrategy:
+          type: string
+          enum: [round_robin, least_busy]
 
     CreateUserBody:
       type: object
@@ -980,6 +1087,10 @@ components:
           type: string
           format: date-time
         resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        queuedAt:
           type: string
           format: date-time
           nullable: true

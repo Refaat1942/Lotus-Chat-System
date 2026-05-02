@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { conversationsTable, customersTable, usersTable } from "@workspace/db";
 import { eq, and, ilike, desc, sql } from "drizzle-orm";
 import { requireAuth, AuthRequest } from "../middlewares/auth";
+import { tryAutoAssign, drainQueue } from "../lib/assignment";
 import type { Server as IOServer } from "socket.io";
 
 const router = Router();
@@ -19,6 +20,7 @@ async function getConversationWithRelations(id: number) {
     unreadCount: conversationsTable.unreadCount,
     createdAt: conversationsTable.createdAt,
     resolvedAt: conversationsTable.resolvedAt,
+    queuedAt: conversationsTable.queuedAt,
     customer: {
       id: customersTable.id,
       name: customersTable.name,
@@ -34,6 +36,7 @@ async function getConversationWithRelations(id: number) {
       name: usersTable.name,
       email: usersTable.email,
       role: usersTable.role,
+      status: usersTable.status,
       createdAt: usersTable.createdAt,
     },
   }).from(conversationsTable)
@@ -57,6 +60,7 @@ router.get("/conversations", requireAuth, async (req: AuthRequest, res) => {
     unreadCount: conversationsTable.unreadCount,
     createdAt: conversationsTable.createdAt,
     resolvedAt: conversationsTable.resolvedAt,
+    queuedAt: conversationsTable.queuedAt,
     customer: {
       id: customersTable.id,
       name: customersTable.name,
@@ -72,6 +76,7 @@ router.get("/conversations", requireAuth, async (req: AuthRequest, res) => {
       name: usersTable.name,
       email: usersTable.email,
       role: usersTable.role,
+      status: usersTable.status,
       createdAt: usersTable.createdAt,
     },
   }).from(conversationsTable)
@@ -100,6 +105,13 @@ router.post("/conversations", requireAuth, async (req, res) => {
   const [conv] = await db.insert(conversationsTable).values({
     customerId, tags: tags || [], assignedAgentId: assignedAgentId || null,
   }).returning();
+
+  // If no explicit assignee, run auto-assignment
+  if (!assignedAgentId) {
+    const io = req.app.get("io") as IOServer | undefined;
+    await tryAutoAssign(conv.id, io);
+  }
+
   const full = await getConversationWithRelations(conv.id);
   res.status(201).json(full);
 });
@@ -177,6 +189,11 @@ router.post("/conversations/:id/resolve", requireAuth, async (req: AuthRequest, 
   }
   await db.update(conversationsTable).set({ status: "resolved", resolvedAt: new Date() }).where(eq(conversationsTable.id, id));
   const full = await getConversationWithRelations(id);
+
+  // The agent now has capacity — try to pull the next queued chat to them.
+  const io = req.app.get("io") as IOServer | undefined;
+  void drainQueue(io);
+
   res.json(full);
 });
 

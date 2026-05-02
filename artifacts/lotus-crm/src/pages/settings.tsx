@@ -3,14 +3,19 @@ import {
   useListUsers, useCreateUser, useDeleteUser,
   useListTags, useCreateTag, useDeleteTag,
   useListQuickReplies, useCreateQuickReply, useDeleteQuickReply,
-  getListUsersQueryKey, getListTagsQueryKey, getListQuickRepliesQueryKey
+  useGetSettings, useUpdateSettings,
+  getListUsersQueryKey, getListTagsQueryKey, getListQuickRepliesQueryKey,
+  getGetSettingsQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format, parseISO } from "date-fns";
-import { Trash2, Plus, Shield, Users, Tag as TagIcon, MessageSquare } from "lucide-react";
+import { Trash2, Plus, Shield, Users, Tag as TagIcon, MessageSquare, Sliders } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +51,7 @@ export default function SettingsPage() {
           <TabsTrigger value="users" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><Users className="h-4 w-4 mr-2" /> Users & Roles</TabsTrigger>
           <TabsTrigger value="tags" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><TagIcon className="h-4 w-4 mr-2" /> Conversation Tags</TabsTrigger>
           <TabsTrigger value="replies" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><MessageSquare className="h-4 w-4 mr-2" /> Quick Replies</TabsTrigger>
+          <TabsTrigger value="distribution" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><Sliders className="h-4 w-4 mr-2" /> Chat Distribution</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-6 m-0">
@@ -58,6 +64,10 @@ export default function SettingsPage() {
 
         <TabsContent value="replies" className="space-y-6 m-0">
           <QuickRepliesSettings />
+        </TabsContent>
+
+        <TabsContent value="distribution" className="space-y-6 m-0">
+          <ChatDistributionSettings />
         </TabsContent>
       </Tabs>
     </div>
@@ -375,6 +385,144 @@ function QuickRepliesSettings() {
               </Button>
             </form>
           </Form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// CHAT DISTRIBUTION
+// -----------------------------------------------------------------------------
+function ChatDistributionSettings() {
+  const { data: settings, isLoading } = useGetSettings();
+  const updateMut = useUpdateSettings();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const [maxChats, setMaxChats] = React.useState<number>(5);
+  const [autoAssign, setAutoAssign] = React.useState<boolean>(true);
+  const [strategy, setStrategy] = React.useState<"round_robin" | "least_busy">("least_busy");
+  const [dirty, setDirty] = React.useState(false);
+
+  React.useEffect(() => {
+    if (settings) {
+      setMaxChats(settings.maxChatsPerAgent);
+      setAutoAssign(settings.autoAssign);
+      setStrategy(settings.assignmentStrategy as "round_robin" | "least_busy");
+      setDirty(false);
+    }
+  }, [settings]);
+
+  const save = () => {
+    updateMut.mutate(
+      { data: { maxChatsPerAgent: maxChats, autoAssign, assignmentStrategy: strategy } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
+          toast({ title: "Settings saved" });
+          setDirty(false);
+        },
+        onError: () => toast({ title: "Could not save settings", variant: "destructive" }),
+      },
+    );
+  };
+
+  return (
+    <div className="grid md:grid-cols-3 gap-6">
+      <Card className="md:col-span-2 shadow-sm">
+        <CardHeader>
+          <CardTitle>Chat Distribution</CardTitle>
+          <CardDescription>
+            Control how incoming conversations are routed to your agents.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          {isLoading ? (
+            <Skeleton className="h-40 w-full" />
+          ) : (
+            <>
+              {/* Auto-assign toggle */}
+              <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                <div className="space-y-1">
+                  <Label className="text-sm font-medium">Auto-assign new chats</Label>
+                  <p className="text-xs text-muted-foreground">
+                    When on, new conversations are automatically routed to the next available
+                    agent. When all agents are full, chats wait in a queue.
+                  </p>
+                </div>
+                <Switch
+                  checked={autoAssign}
+                  onCheckedChange={(v) => { setAutoAssign(v); setDirty(true); }}
+                  data-testid="switch-auto-assign"
+                />
+              </div>
+
+              {/* Max chats slider */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Max chats per agent</Label>
+                  <span className="text-sm font-semibold text-primary">{maxChats}</span>
+                </div>
+                <Slider
+                  min={1}
+                  max={20}
+                  step={1}
+                  value={[maxChats]}
+                  onValueChange={(v) => { setMaxChats(v[0]); setDirty(true); }}
+                  data-testid="slider-max-chats"
+                />
+                <p className="text-xs text-muted-foreground">
+                  An agent will not receive a new chat once they have this many open or pending
+                  conversations.
+                </p>
+              </div>
+
+              {/* Strategy */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Assignment strategy</Label>
+                <Select
+                  value={strategy}
+                  onValueChange={(v) => { setStrategy(v as "round_robin" | "least_busy"); setDirty(true); }}
+                >
+                  <SelectTrigger className="h-10" data-testid="select-strategy">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="least_busy">Least busy (lowest workload first)</SelectItem>
+                    <SelectItem value="round_robin">Round-robin (longest idle agent first)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={save} disabled={!dirty || updateMut.isPending} data-testid="button-save-distribution">
+                  {updateMut.isPending ? "Saving…" : "Save changes"}
+                </Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm h-fit">
+        <CardHeader>
+          <CardTitle className="text-base">How it works</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            <strong className="text-foreground">Available agents</strong> can receive new
+            chats. Agents control their own status from the sidebar (Available / Busy / Offline).
+          </p>
+          <p>
+            When a new conversation arrives, the system picks an available agent under the
+            workload cap using the chosen strategy.
+          </p>
+          <p>
+            When no agent is available, the chat waits in the queue. As soon as an agent
+            resolves a chat or becomes available, the next queued chat is assigned to them
+            automatically.
+          </p>
         </CardContent>
       </Card>
     </div>

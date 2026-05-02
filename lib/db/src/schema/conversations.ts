@@ -21,6 +21,7 @@ export const conversationsTable = pgTable("conversations", {
   unreadCount: integer("unread_count").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   resolvedAt: timestamp("resolved_at"),
+  queuedAt: timestamp("queued_at"),
 });
 
 export const insertConversationSchema = createInsertSchema(

@@ -8,6 +8,10 @@ export const usersTable = pgTable("users", {
   email: text("email").notNull().unique(),
   role: text("role", { enum: ["admin", "agent"] }).notNull().default("agent"),
   passwordHash: text("password_hash").notNull(),
+  status: text("status", { enum: ["available", "busy", "offline"] })
+    .notNull()
+    .default("available"),
+  lastAssignedAt: timestamp("last_assigned_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
