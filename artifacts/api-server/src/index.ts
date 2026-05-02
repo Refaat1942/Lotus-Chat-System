@@ -2,6 +2,7 @@ import { createServer } from "http";
 import { Server as IOServer } from "socket.io";
 import app from "./app";
 import { logger } from "./lib/logger";
+import { bootstrapSeed } from "./lib/bootstrap-seed";
 
 const rawPort = process.env["PORT"];
 
@@ -55,6 +56,7 @@ io.on("connection", (socket) => {
   });
 });
 
-httpServer.listen(port, () => {
+httpServer.listen(port, async () => {
   logger.info({ port }, "Server listening");
+  await bootstrapSeed();
 });
