@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { useGetMe, getGetMeQueryKey, User } from "@workspace/api-client-react";
-import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { useGetMe, getGetMeQueryKey, setAuthTokenGetter, User } from "@workspace/api-client-react";
 
 interface AuthContextType {
   user: User | null;
