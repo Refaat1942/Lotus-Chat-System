@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Lotus Pharmacies CRM"
+version = "1.0.0"
+id = "artifacts/lotus-crm"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23414
+
+[services.development]
+run = "pnpm --filter @workspace/lotus-crm run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/lotus-crm", "run", "build" ]
+publicDir = "artifacts/lotus-crm/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23414"
+BASE_PATH = "/"

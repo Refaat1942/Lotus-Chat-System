@@ -3,20 +3,36 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Lotus Pharmacies CRM & Chat API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: users
+    description: User management
+  - name: customers
+    description: Customer management
+  - name: conversations
+    description: Conversation management
+  - name: messages
+    description: Message management
+  - name: tags
+    description: Tag management
+  - name: quickreplies
+    description: Quick reply templates
+  - name: analytics
+    description: Analytics and reports
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,7 +40,724 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # Auth
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # Users
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create a user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get a user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateUser
+      tags: [users]
+      summary: Update a user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      summary: Delete a user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # Customers
+  /customers:
+    get:
+      operationId: listCustomers
+      tags: [customers]
+      summary: List customers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: tag
+          in: query
+          schema:
+            type: string
+        - name: branch
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of customers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Customer"
+    post:
+      operationId: createCustomer
+      tags: [customers]
+      summary: Create a customer
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCustomerBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+
+  /customers/{id}:
+    get:
+      operationId: getCustomer
+      tags: [customers]
+      summary: Get a customer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateCustomer
+      tags: [customers]
+      summary: Update a customer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCustomerBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+    delete:
+      operationId: deleteCustomer
+      tags: [customers]
+      summary: Delete a customer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /customers/{id}/conversations:
+    get:
+      operationId: getCustomerConversations
+      tags: [customers]
+      summary: Get a customer's conversations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+
+  # Conversations
+  /conversations:
+    get:
+      operationId: listConversations
+      tags: [conversations]
+      summary: List conversations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, resolved, pending]
+        - name: agentId
+          in: query
+          schema:
+            type: integer
+        - name: tag
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+    post:
+      operationId: createConversation
+      tags: [conversations]
+      summary: Create a conversation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConversationBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /conversations/{id}:
+    get:
+      operationId: getConversation
+      tags: [conversations]
+      summary: Get a conversation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateConversation
+      tags: [conversations]
+      summary: Update a conversation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateConversationBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /conversations/{id}/assign:
+    post:
+      operationId: assignConversation
+      tags: [conversations]
+      summary: Assign conversation to agent
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignConversationBody"
+      responses:
+        "200":
+          description: Assigned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /conversations/{id}/resolve:
+    post:
+      operationId: resolveConversation
+      tags: [conversations]
+      summary: Resolve a conversation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  # Messages
+  /conversations/{id}/messages:
+    get:
+      operationId: listMessages
+      tags: [messages]
+      summary: List messages in a conversation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: sendMessage
+      tags: [messages]
+      summary: Send a message
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageBody"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  # Tags
+  /tags:
+    get:
+      operationId: listTags
+      tags: [tags]
+      summary: List tags
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tag"
+    post:
+      operationId: createTag
+      tags: [tags]
+      summary: Create a tag
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTagBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+
+  /tags/{id}:
+    put:
+      operationId: updateTag
+      tags: [tags]
+      summary: Update a tag
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTagBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+    delete:
+      operationId: deleteTag
+      tags: [tags]
+      summary: Delete a tag
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # Quick Replies
+  /quick-replies:
+    get:
+      operationId: listQuickReplies
+      tags: [quickreplies]
+      summary: List quick reply templates
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Quick replies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QuickReply"
+    post:
+      operationId: createQuickReply
+      tags: [quickreplies]
+      summary: Create a quick reply
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateQuickReplyBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickReply"
+
+  /quick-replies/{id}:
+    delete:
+      operationId: deleteQuickReply
+      tags: [quickreplies]
+      summary: Delete a quick reply
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # Analytics
+  /analytics/dashboard:
+    get:
+      operationId: getDashboardStats
+      tags: [analytics]
+      summary: Get dashboard KPI stats
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /analytics/chats-over-time:
+    get:
+      operationId: getChatsOverTime
+      tags: [analytics]
+      summary: Get chats over time (last 30 days)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Chats over time data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatsOverTimePoint"
+
+  /analytics/agent-performance:
+    get:
+      operationId: getAgentPerformance
+      tags: [analytics]
+      summary: Get agent performance stats
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Agent performance data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgentPerformance"
+
+  /analytics/recent-activity:
+    get:
+      operationId: getRecentActivity
+      tags: [analytics]
+      summary: Get recent activity feed
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /analytics/reports/export:
+    get:
+      operationId: exportReport
+      tags: [analytics]
+      summary: Export agent performance report as CSV
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +767,434 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [admin, agent]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - email
+        - role
+        - createdAt
+
+    CreateUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        role:
+          type: string
+          enum: [admin, agent]
+      required:
+        - name
+        - email
+        - password
+        - role
+
+    UpdateUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [admin, agent]
+        password:
+          type: string
+
+    Customer:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: string
+        branch:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string
+        prescriptionNotes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - phone
+        - createdAt
+
+    CreateCustomerBody:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        branch:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string
+        prescriptionNotes:
+          type: string
+      required:
+        - name
+        - phone
+
+    UpdateCustomerBody:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        branch:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string
+        prescriptionNotes:
+          type: string
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: integer
+        customerId:
+          type: integer
+        customer:
+          $ref: "#/components/schemas/Customer"
+        assignedAgentId:
+          type: integer
+          nullable: true
+        assignedAgent:
+          $ref: "#/components/schemas/User"
+          nullable: true
+        status:
+          type: string
+          enum: [open, resolved, pending]
+        tags:
+          type: array
+          items:
+            type: string
+        lastMessage:
+          type: string
+          nullable: true
+        lastMessageAt:
+          type: string
+          format: date-time
+          nullable: true
+        unreadCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - customerId
+        - status
+        - tags
+        - unreadCount
+        - createdAt
+
+    CreateConversationBody:
+      type: object
+      properties:
+        customerId:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+        assignedAgentId:
+          type: integer
+          nullable: true
+      required:
+        - customerId
+
+    UpdateConversationBody:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [open, resolved, pending]
+        assignedAgentId:
+          type: integer
+          nullable: true
+
+    AssignConversationBody:
+      type: object
+      properties:
+        agentId:
+          type: integer
+          nullable: true
+      required:
+        - agentId
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        conversationId:
+          type: integer
+        senderId:
+          type: integer
+          nullable: true
+        senderType:
+          type: string
+          enum: [agent, customer, system]
+        body:
+          type: string
+        attachments:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [sent, delivered, read]
+        isNote:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - conversationId
+        - senderType
+        - body
+        - status
+        - isNote
+        - createdAt
+
+    SendMessageBody:
+      type: object
+      properties:
+        body:
+          type: string
+        senderType:
+          type: string
+          enum: [agent, customer, system]
+        isNote:
+          type: boolean
+        attachments:
+          type: array
+          items:
+            type: string
+      required:
+        - body
+        - senderType
+
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        color:
+          type: string
+      required:
+        - id
+        - name
+        - color
+
+    CreateTagBody:
+      type: object
+      properties:
+        name:
+          type: string
+        color:
+          type: string
+      required:
+        - name
+        - color
+
+    QuickReply:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - body
+        - createdAt
+
+    CreateQuickReplyBody:
+      type: object
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+      required:
+        - title
+        - body
+
+    DashboardStats:
+      type: object
+      properties:
+        totalConversations:
+          type: integer
+        activeChats:
+          type: integer
+        resolvedChats:
+          type: integer
+        avgResponseTimeMinutes:
+          type: number
+        openConversations:
+          type: integer
+        newConversationsToday:
+          type: integer
+        totalCustomers:
+          type: integer
+        totalAgents:
+          type: integer
+      required:
+        - totalConversations
+        - activeChats
+        - resolvedChats
+        - avgResponseTimeMinutes
+        - openConversations
+        - newConversationsToday
+        - totalCustomers
+        - totalAgents
+
+    ChatsOverTimePoint:
+      type: object
+      properties:
+        date:
+          type: string
+        count:
+          type: integer
+      required:
+        - date
+        - count
+
+    AgentPerformance:
+      type: object
+      properties:
+        agentId:
+          type: integer
+        agentName:
+          type: string
+        totalHandled:
+          type: integer
+        resolved:
+          type: integer
+        avgResponseTimeMinutes:
+          type: number
+        activeChats:
+          type: integer
+      required:
+        - agentId
+        - agentName
+        - totalHandled
+        - resolved
+        - avgResponseTimeMinutes
+        - activeChats
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [conversation_created, conversation_resolved, message_sent, agent_assigned, customer_created]
+        description:
+          type: string
+        agentName:
+          type: string
+          nullable: true
+        customerName:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - description
+        - createdAt
