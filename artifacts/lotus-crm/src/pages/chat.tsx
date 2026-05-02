@@ -57,6 +57,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { FaWhatsapp, FaFacebookMessenger, FaInstagram, FaSms } from "react-icons/fa";
+import { Globe } from "lucide-react";
 
 export default function ChatPage() {
   const [selectedConvId, setSelectedConvId] = useState<number | null>(null);
@@ -401,7 +403,7 @@ function ChatCenter({ conversationId, currentUserId, currentUserName, message, s
               data-testid="input-chat-message"
             />
             <div className="flex items-center justify-between p-2 bg-muted/20 border-t border-border">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 flex-wrap">
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -414,6 +416,7 @@ function ChatCenter({ conversationId, currentUserId, currentUserName, message, s
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
                   <Paperclip className="h-4 w-4" />
                 </Button>
+                <ChannelButtons />
               </div>
               <Button 
                 size="sm" 
@@ -433,6 +436,49 @@ function ChatCenter({ conversationId, currentUserId, currentUserName, message, s
           This conversation is resolved. 
         </div>
       )}
+    </div>
+  );
+}
+
+function ChannelButtons() {
+  const { toast } = useToast();
+  const channels: { key: string; label: string; icon: React.ReactNode; color: string }[] = [
+    { key: "web",       label: "Web Chat (active)", icon: <Globe className="h-4 w-4" />,                     color: "text-emerald-600" },
+    { key: "whatsapp",  label: "WhatsApp",          icon: <FaWhatsapp className="h-4 w-4" />,                color: "text-[#25D366]" },
+    { key: "messenger", label: "Facebook Messenger",icon: <FaFacebookMessenger className="h-4 w-4" />,       color: "text-[#0084FF]" },
+    { key: "instagram", label: "Instagram DM",      icon: <FaInstagram className="h-4 w-4" />,               color: "text-[#E4405F]" },
+    { key: "sms",       label: "SMS",               icon: <FaSms className="h-4 w-4" />,                     color: "text-slate-500" },
+  ];
+  const [active, setActive] = React.useState<string>("web");
+
+  const handleClick = (channelKey: string, channelLabel: string) => {
+    if (channelKey === "web") {
+      setActive("web");
+      return;
+    }
+    toast({
+      title: `${channelLabel} not connected yet`,
+      description: "We'll wire this channel up once the integration step is approved.",
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-0.5 ml-1 pl-2 border-l border-border" data-testid="channel-buttons">
+      {channels.map((c) => (
+        <Button
+          key={c.key}
+          type="button"
+          variant="ghost"
+          size="icon"
+          title={c.label}
+          aria-label={c.label}
+          onClick={() => handleClick(c.key, c.label)}
+          className={`h-8 w-8 ${active === c.key ? `${c.color} bg-muted` : "text-muted-foreground hover:" + c.color}`}
+          data-testid={`btn-channel-${c.key}`}
+        >
+          {c.icon}
+        </Button>
+      ))}
     </div>
   );
 }
@@ -514,8 +560,8 @@ function ChatContextPanel({ conversationId, onInsertReply }: { conversationId: n
   const suggestedTags = allTags?.filter(t => !conv?.tags?.includes(t.name)) || [];
 
   return (
-    <div className="w-80 flex-shrink-0 flex flex-col bg-sidebar overflow-hidden">
-      <Tabs defaultValue="details" className="flex-1 flex flex-col">
+    <div className="w-80 flex-shrink-0 flex flex-col bg-sidebar overflow-hidden min-h-0">
+      <Tabs defaultValue="details" className="flex-1 flex flex-col min-h-0">
         <TabsList className="w-full justify-start h-12 rounded-none border-b border-border bg-transparent px-4">
           <TabsTrigger value="details" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4">Details</TabsTrigger>
           <TabsTrigger value="replies" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4">Quick Replies</TabsTrigger>
