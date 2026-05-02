@@ -670,7 +670,7 @@ paths:
           description: Deleted
 
   # Analytics
-  /analytics/dashboard:
+  /analytics/summary:
     get:
       operationId: getDashboardStats
       tags: [analytics]
@@ -736,7 +736,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/ActivityItem"
 
-  /analytics/reports/export:
+  /reports/export:
     get:
       operationId: exportReport
       tags: [analytics]

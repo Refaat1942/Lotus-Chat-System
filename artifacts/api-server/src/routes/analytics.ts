@@ -11,13 +11,15 @@ import { requireAuth } from "../middlewares/auth";
 
 const router = Router();
 
-router.get("/analytics/dashboard", requireAuth, async (_req, res) => {
+router.get("/analytics/summary", requireAuth, async (_req, res) => {
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   const [totalConvRow] = await db.select({ count: count() }).from(conversationsTable);
   const [activeRow] = await db.select({ count: count() }).from(conversationsTable).where(eq(conversationsTable.status, "open"));
-  const [resolvedRow] = await db.select({ count: count() }).from(conversationsTable).where(eq(conversationsTable.status, "resolved"));
+  const [resolvedRow] = await db.select({ count: count() }).from(conversationsTable).where(
+    and(eq(conversationsTable.status, "resolved"), gte(conversationsTable.resolvedAt, startOfDay))
+  );
   const [pendingRow] = await db.select({ count: count() }).from(conversationsTable).where(eq(conversationsTable.status, "pending"));
   const [newTodayRow] = await db.select({ count: count() }).from(conversationsTable).where(gte(conversationsTable.createdAt, startOfDay));
   const [totalCustomersRow] = await db.select({ count: count() }).from(customersTable);
@@ -162,7 +164,7 @@ router.get("/analytics/recent-activity", requireAuth, async (_req, res) => {
   })));
 });
 
-router.get("/analytics/reports/export", requireAuth, async (_req, res) => {
+router.get("/reports/export", requireAuth, async (_req, res) => {
   const result = await db.execute(sql`
     SELECT
       u.name as "Agent Name",

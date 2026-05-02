@@ -2477,7 +2477,7 @@ export const useDeleteQuickReply = <
  * @summary Get dashboard KPI stats
  */
 export const getGetDashboardStatsUrl = () => {
-  return `/api/analytics/dashboard`;
+  return `/api/analytics/summary`;
 };
 
 export const getDashboardStats = async (
@@ -2490,7 +2490,7 @@ export const getDashboardStats = async (
 };
 
 export const getGetDashboardStatsQueryKey = () => {
-  return [`/api/analytics/dashboard`] as const;
+  return [`/api/analytics/summary`] as const;
 };
 
 export const getGetDashboardStatsQueryOptions = <
@@ -2777,7 +2777,7 @@ export function useGetRecentActivity<
  * @summary Export agent performance report as CSV
  */
 export const getExportReportUrl = () => {
-  return `/api/analytics/reports/export`;
+  return `/api/reports/export`;
 };
 
 export const exportReport = async (options?: RequestInit): Promise<string> => {
@@ -2788,7 +2788,7 @@ export const exportReport = async (options?: RequestInit): Promise<string> => {
 };
 
 export const getExportReportQueryKey = () => {
-  return [`/api/analytics/reports/export`] as const;
+  return [`/api/reports/export`] as const;
 };
 
 export const getExportReportQueryOptions = <
