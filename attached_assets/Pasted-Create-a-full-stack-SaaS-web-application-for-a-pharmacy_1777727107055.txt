@@ -1,0 +1,172 @@
+Create a full-stack SaaS web application for a pharmacy chain called "Lotus Pharmacies CRM & Chat System".
+
+### Branding & UI:
+
+* Use a modern, clean design with a **green color palette** (primary: #2E7D32, secondary: light green shades)
+* Add a professional logo text: "Lotus Pharmacies"
+* Use smooth UI with cards, shadows, and modern typography
+* Include icons (Heroicons or Lucide)
+* Add subtle animations (hover effects, transitions)
+* Include light and dark mode
+* Design should feel premium like modern CRM tools
+
+---
+
+### 1. User Roles:
+
+* Admin:
+
+  * Full access
+  * Manage users (agents)
+  * View all reports
+  * Configure system settings
+* Agent:
+
+  * Handle assigned chats
+  * View their own performance
+  * Access customer data
+
+---
+
+### 2. Authentication:
+
+* Secure login system (JWT)
+* Role-based access control
+* Password hashing
+* Session management
+
+---
+
+### 3. Main Dashboard (IMPORTANT):
+
+Create a beautiful dashboard with:
+
+* KPI Cards:
+
+  * Total conversations
+  * Active chats
+  * Average response time
+  * Resolved chats
+* Charts:
+
+  * Chats over time
+  * Agent performance
+* Recent activity feed
+
+---
+
+### 4. Chat System:
+
+* Real-time chat (Socket.io)
+* Layout:
+
+  * Sidebar (conversations list)
+  * Chat window
+  * Customer info panel
+* Features:
+
+  * Send/receive messages
+  * Attachments
+  * Message status
+  * Assign chats to agents
+  * Chat tags (New / VIP / Complaint)
+
+---
+
+### 5. CRM (Customers):
+
+* Customer profile:
+
+  * Name
+  * Phone
+  * Tags
+  * Notes
+  * Full conversation history
+* Search & filter customers
+
+---
+
+### 6. Reports & Analytics:
+
+* Create a Reports page with:
+
+  * Agent performance table
+  * Response time analysis
+  * Number of handled chats per agent
+* Export reports (CSV)
+
+---
+
+### 7. Admin Panel:
+
+* Add/Edit/Delete users
+* Assign roles (Admin / Agent)
+* Manage tags
+* System settings
+
+---
+
+### 8. Database (PostgreSQL):
+
+Tables:
+
+* Users (id, name, email, role, password)
+* Customers
+* Conversations
+* Messages
+* Tags
+
+---
+
+### 9. Backend:
+
+* Node.js + Express
+* REST API
+* WebSocket server
+* Clean architecture (controllers, services, routes)
+
+---
+
+### 10. Frontend:
+
+* React.js
+* Use component-based structure
+* Pages:
+
+  * Login
+  * Dashboard
+  * Chat
+  * Customers
+  * Reports
+  * Settings
+
+---
+
+### 11. Deployment:
+
+* Docker support
+* Environment variables (.env)
+* Ready for VPS deployment (Hostinger)
+* Include Nginx configuration
+* Provide deployment steps
+
+---
+
+### 12. Bonus:
+
+* Notifications system
+* Internal notes for agents
+* Quick replies templates
+* Pharmacy-specific fields (branch, prescription notes)
+
+---
+
+### OUTPUT:
+
+* Full working project
+* Clean UI design (important)
+* Scalable folder structure
+* Clear comments
+* Deployment guide for VPS
+
+Make sure the UI looks premium, smooth, and branded as "Lotus Pharmacies".
