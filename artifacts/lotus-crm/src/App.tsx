@@ -25,44 +25,50 @@ const queryClient = new QueryClient({
   }
 });
 
+type PageComponent = React.ComponentType<Record<string, never>>;
+
+interface RouteProps {
+  component: PageComponent;
+}
+
 // Protected Route Component
-const ProtectedRoute = ({ component: Component, ...rest }: any) => {
+const ProtectedRoute = ({ component: Component }: RouteProps) => {
   const { user, isLoading } = useAuth();
-  
+
   if (isLoading) {
     return <div className="h-screen w-full flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
   }
-  
+
   if (!user) {
     return <Redirect to="/login" />;
   }
 
   return (
     <AppLayout>
-      <Component {...rest} />
+      <Component />
     </AppLayout>
   );
 };
 
 // Admin Route Component
-const AdminRoute = ({ component: Component, ...rest }: any) => {
+const AdminRoute = ({ component: Component }: RouteProps) => {
   const { user, isLoading } = useAuth();
-  
+
   if (isLoading) {
     return <div className="h-screen w-full flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
   }
-  
+
   if (!user) {
     return <Redirect to="/login" />;
   }
-  
+
   if (user.role !== "admin") {
     return <Redirect to="/dashboard" />;
   }
 
   return (
     <AppLayout>
-      <Component {...rest} />
+      <Component />
     </AppLayout>
   );
 };
@@ -73,20 +79,20 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={LoginPage} />
-      
+
       {/* Root redirect */}
       <Route path="/">
         {() => <Redirect to={user ? "/dashboard" : "/login"} />}
       </Route>
 
       {/* Protected Routes */}
-      <Route path="/dashboard">{(params) => <ProtectedRoute component={DashboardPage} />}</Route>
-      <Route path="/chat">{(params) => <ProtectedRoute component={ChatPage} />}</Route>
-      <Route path="/customers">{(params) => <ProtectedRoute component={CustomersPage} />}</Route>
-      <Route path="/reports">{(params) => <ProtectedRoute component={ReportsPage} />}</Route>
-      
+      <Route path="/dashboard">{() => <ProtectedRoute component={DashboardPage} />}</Route>
+      <Route path="/chat">{() => <ProtectedRoute component={ChatPage} />}</Route>
+      <Route path="/customers">{() => <ProtectedRoute component={CustomersPage} />}</Route>
+      <Route path="/reports">{() => <ProtectedRoute component={ReportsPage} />}</Route>
+
       {/* Admin Route */}
-      <Route path="/settings">{(params) => <AdminRoute component={SettingsPage} />}</Route>
+      <Route path="/settings">{() => <AdminRoute component={SettingsPage} />}</Route>
 
       <Route component={NotFound} />
     </Switch>

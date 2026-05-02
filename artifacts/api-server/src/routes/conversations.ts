@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { conversationsTable, customersTable, usersTable } from "@workspace/db";
-import { eq, and, ilike, desc } from "drizzle-orm";
+import { eq, and, ilike, desc, sql } from "drizzle-orm";
 import { requireAuth, AuthRequest } from "../middlewares/auth";
 import type { Server as IOServer } from "socket.io";
 
@@ -82,6 +82,7 @@ router.get("/conversations", requireAuth, async (req: AuthRequest, res) => {
   if (status) conditions.push(eq(conversationsTable.status, status as "open" | "resolved" | "pending"));
   if (agentId) conditions.push(eq(conversationsTable.assignedAgentId, Number(agentId)));
   if (search) conditions.push(ilike(customersTable.name, `%${search}%`));
+  if (tag) conditions.push(sql<boolean>`${tag} = ANY(${conversationsTable.tags})`);
   if (req.user?.role === "agent") {
     conditions.push(eq(conversationsTable.assignedAgentId, req.user.id));
   }
