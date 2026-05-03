@@ -284,6 +284,8 @@ export interface DashboardStats {
   newConversationsToday: number;
   totalCustomers: number;
   totalAgents: number;
+  agentsAvailable?: number;
+  pendingChats?: number;
 }
 
 export interface ChatsOverTimePoint {
@@ -320,6 +322,99 @@ export interface ActivityItem {
   createdAt: string;
 }
 
+export interface ReportsOverview {
+  openChats: number;
+  pendingChats: number;
+  resolvedToday: number;
+  resolvedThisWeek: number;
+  newToday: number;
+  agentsOnline: number;
+  agentsBusy: number;
+  agentsTotal: number;
+  avgFirstResponseTodayMinutes: number;
+}
+
+export interface ChatVolumePoint {
+  bucket: string;
+  total: number;
+  open: number;
+  pending: number;
+  resolved: number;
+}
+
+export interface ResponseTimeDistributionBucket {
+  bucket: string;
+  count: number;
+}
+
+export interface ResponseTimesReport {
+  slaMinutes: number;
+  total: number;
+  avgMinutes: number;
+  minMinutes: number;
+  maxMinutes: number;
+  p50Minutes: number;
+  p90Minutes: number;
+  p95Minutes: number;
+  withinSla: number;
+  breaches: number;
+  avgResolutionMinutes: number;
+  medianResolutionMinutes: number;
+  distribution: ResponseTimeDistributionBucket[];
+}
+
+export interface CustomersReportSummary {
+  activeCustomers: number;
+  repeatCustomers: number;
+  repeatRatePercent: number;
+  avgConversationsPerCustomer: number;
+}
+
+export interface TopCustomer {
+  customerId: number;
+  customerName: string;
+  phone: string;
+  branch?: string | null;
+  conversationCount: number;
+  lastContactAt?: string | null;
+}
+
+export interface CustomerGrowthPoint {
+  bucket: string;
+  count: number;
+}
+
+export interface CustomersReport {
+  summary: CustomersReportSummary;
+  topCustomers: TopCustomer[];
+  customerGrowth: CustomerGrowthPoint[];
+}
+
+export interface BranchReportRow {
+  branch: string;
+  conversationCount: number;
+  resolvedCount: number;
+  openCount: number;
+  customerCount: number;
+  avgResponseMinutes: number;
+}
+
+export interface TagCount {
+  tag: string;
+  count: number;
+}
+
+export interface TagsReport {
+  conversationTags: TagCount[];
+  customerTags: TagCount[];
+}
+
+export interface HeatmapCell {
+  dayOfWeek: number;
+  hour: number;
+  count: number;
+}
+
 export type ListCustomersParams = {
   search?: string;
   tag?: string;
@@ -340,4 +435,63 @@ export const ListConversationsStatus = {
   open: "open",
   resolved: "resolved",
   pending: "pending",
+} as const;
+
+export type GetChatVolumeReportParams = {
+  from?: string;
+  to?: string;
+  groupBy?: GetChatVolumeReportGroupBy;
+};
+
+export type GetChatVolumeReportGroupBy =
+  (typeof GetChatVolumeReportGroupBy)[keyof typeof GetChatVolumeReportGroupBy];
+
+export const GetChatVolumeReportGroupBy = {
+  day: "day",
+  week: "week",
+  month: "month",
+} as const;
+
+export type GetResponseTimesReportParams = {
+  from?: string;
+  to?: string;
+  slaMinutes?: number;
+};
+
+export type GetCustomersReportParams = {
+  from?: string;
+  to?: string;
+  limit?: number;
+};
+
+export type GetBranchesReportParams = {
+  from?: string;
+  to?: string;
+};
+
+export type GetTagsReportParams = {
+  from?: string;
+  to?: string;
+};
+
+export type GetHeatmapReportParams = {
+  from?: string;
+  to?: string;
+};
+
+export type ExportReportParams = {
+  type?: ExportReportType;
+  from?: string;
+  to?: string;
+};
+
+export type ExportReportType =
+  (typeof ExportReportType)[keyof typeof ExportReportType];
+
+export const ExportReportType = {
+  agents: "agents",
+  conversations: "conversations",
+  customers: "customers",
+  branches: "branches",
+  tags: "tags",
 } as const;

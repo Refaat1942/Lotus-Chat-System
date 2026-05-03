@@ -21,6 +21,8 @@ import type {
   AgentPerformance,
   AssignConversationBody,
   AuthResponse,
+  BranchReportRow,
+  ChatVolumePoint,
   ChatsOverTimePoint,
   Conversation,
   CreateConversationBody,
@@ -29,17 +31,29 @@ import type {
   CreateTagBody,
   CreateUserBody,
   Customer,
+  CustomersReport,
   DashboardStats,
   ErrorResponse,
+  ExportReportParams,
+  GetBranchesReportParams,
+  GetChatVolumeReportParams,
+  GetCustomersReportParams,
+  GetHeatmapReportParams,
+  GetResponseTimesReportParams,
+  GetTagsReportParams,
   HealthStatus,
+  HeatmapCell,
   ListConversationsParams,
   ListCustomersParams,
   LoginBody,
   Message,
   QuickReply,
+  ReportsOverview,
+  ResponseTimesReport,
   SendMessageBody,
   Settings,
   Tag,
+  TagsReport,
   UpdateConversationBody,
   UpdateCustomerBody,
   UpdateSettingsBody,
@@ -3109,29 +3123,31 @@ export const useUpdateMyStatus = <
 };
 
 /**
- * @summary Export agent performance report as CSV
+ * @summary Real-time KPI overview
  */
-export const getExportReportUrl = () => {
-  return `/api/reports/export`;
+export const getGetReportsOverviewUrl = () => {
+  return `/api/reports/overview`;
 };
 
-export const exportReport = async (options?: RequestInit): Promise<string> => {
-  return customFetch<string>(getExportReportUrl(), {
+export const getReportsOverview = async (
+  options?: RequestInit,
+): Promise<ReportsOverview> => {
+  return customFetch<ReportsOverview>(getGetReportsOverviewUrl(), {
     ...options,
     method: "GET",
   });
 };
 
-export const getExportReportQueryKey = () => {
-  return [`/api/reports/export`] as const;
+export const getGetReportsOverviewQueryKey = () => {
+  return [`/api/reports/overview`] as const;
 };
 
-export const getExportReportQueryOptions = <
-  TData = Awaited<ReturnType<typeof exportReport>>,
+export const getGetReportsOverviewQueryOptions = <
+  TData = Awaited<ReturnType<typeof getReportsOverview>>,
   TError = ErrorType<unknown>,
 >(options?: {
   query?: UseQueryOptions<
-    Awaited<ReturnType<typeof exportReport>>,
+    Awaited<ReturnType<typeof getReportsOverview>>,
     TError,
     TData
   >;
@@ -3139,11 +3155,690 @@ export const getExportReportQueryOptions = <
 }) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getExportReportQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getGetReportsOverviewQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getReportsOverview>>
+  > = ({ signal }) => getReportsOverview({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getReportsOverview>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetReportsOverviewQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getReportsOverview>>
+>;
+export type GetReportsOverviewQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Real-time KPI overview
+ */
+
+export function useGetReportsOverview<
+  TData = Awaited<ReturnType<typeof getReportsOverview>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getReportsOverview>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetReportsOverviewQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Chat volume over time with status breakdown
+ */
+export const getGetChatVolumeReportUrl = (
+  params?: GetChatVolumeReportParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/reports/chat-volume?${stringifiedParams}`
+    : `/api/reports/chat-volume`;
+};
+
+export const getChatVolumeReport = async (
+  params?: GetChatVolumeReportParams,
+  options?: RequestInit,
+): Promise<ChatVolumePoint[]> => {
+  return customFetch<ChatVolumePoint[]>(getGetChatVolumeReportUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetChatVolumeReportQueryKey = (
+  params?: GetChatVolumeReportParams,
+) => {
+  return [`/api/reports/chat-volume`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetChatVolumeReportQueryOptions = <
+  TData = Awaited<ReturnType<typeof getChatVolumeReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetChatVolumeReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getChatVolumeReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetChatVolumeReportQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getChatVolumeReport>>
+  > = ({ signal }) =>
+    getChatVolumeReport(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getChatVolumeReport>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetChatVolumeReportQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getChatVolumeReport>>
+>;
+export type GetChatVolumeReportQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Chat volume over time with status breakdown
+ */
+
+export function useGetChatVolumeReport<
+  TData = Awaited<ReturnType<typeof getChatVolumeReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetChatVolumeReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getChatVolumeReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetChatVolumeReportQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Response-time distribution and SLA stats
+ */
+export const getGetResponseTimesReportUrl = (
+  params?: GetResponseTimesReportParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/reports/response-times?${stringifiedParams}`
+    : `/api/reports/response-times`;
+};
+
+export const getResponseTimesReport = async (
+  params?: GetResponseTimesReportParams,
+  options?: RequestInit,
+): Promise<ResponseTimesReport> => {
+  return customFetch<ResponseTimesReport>(
+    getGetResponseTimesReportUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetResponseTimesReportQueryKey = (
+  params?: GetResponseTimesReportParams,
+) => {
+  return [`/api/reports/response-times`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetResponseTimesReportQueryOptions = <
+  TData = Awaited<ReturnType<typeof getResponseTimesReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetResponseTimesReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getResponseTimesReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetResponseTimesReportQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getResponseTimesReport>>
+  > = ({ signal }) =>
+    getResponseTimesReport(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getResponseTimesReport>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetResponseTimesReportQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getResponseTimesReport>>
+>;
+export type GetResponseTimesReportQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Response-time distribution and SLA stats
+ */
+
+export function useGetResponseTimesReport<
+  TData = Awaited<ReturnType<typeof getResponseTimesReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetResponseTimesReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getResponseTimesReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetResponseTimesReportQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Customer analytics (top, repeat rate, growth)
+ */
+export const getGetCustomersReportUrl = (params?: GetCustomersReportParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/reports/customers?${stringifiedParams}`
+    : `/api/reports/customers`;
+};
+
+export const getCustomersReport = async (
+  params?: GetCustomersReportParams,
+  options?: RequestInit,
+): Promise<CustomersReport> => {
+  return customFetch<CustomersReport>(getGetCustomersReportUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCustomersReportQueryKey = (
+  params?: GetCustomersReportParams,
+) => {
+  return [`/api/reports/customers`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetCustomersReportQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCustomersReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetCustomersReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCustomersReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCustomersReportQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getCustomersReport>>
+  > = ({ signal }) => getCustomersReport(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCustomersReport>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCustomersReportQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCustomersReport>>
+>;
+export type GetCustomersReportQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Customer analytics (top, repeat rate, growth)
+ */
+
+export function useGetCustomersReport<
+  TData = Awaited<ReturnType<typeof getCustomersReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetCustomersReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCustomersReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCustomersReportQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Branch performance breakdown
+ */
+export const getGetBranchesReportUrl = (params?: GetBranchesReportParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/reports/branches?${stringifiedParams}`
+    : `/api/reports/branches`;
+};
+
+export const getBranchesReport = async (
+  params?: GetBranchesReportParams,
+  options?: RequestInit,
+): Promise<BranchReportRow[]> => {
+  return customFetch<BranchReportRow[]>(getGetBranchesReportUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetBranchesReportQueryKey = (
+  params?: GetBranchesReportParams,
+) => {
+  return [`/api/reports/branches`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetBranchesReportQueryOptions = <
+  TData = Awaited<ReturnType<typeof getBranchesReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetBranchesReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBranchesReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetBranchesReportQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getBranchesReport>>
+  > = ({ signal }) => getBranchesReport(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getBranchesReport>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetBranchesReportQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getBranchesReport>>
+>;
+export type GetBranchesReportQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Branch performance breakdown
+ */
+
+export function useGetBranchesReport<
+  TData = Awaited<ReturnType<typeof getBranchesReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetBranchesReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBranchesReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetBranchesReportQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Tag usage analytics
+ */
+export const getGetTagsReportUrl = (params?: GetTagsReportParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/reports/tags?${stringifiedParams}`
+    : `/api/reports/tags`;
+};
+
+export const getTagsReport = async (
+  params?: GetTagsReportParams,
+  options?: RequestInit,
+): Promise<TagsReport> => {
+  return customFetch<TagsReport>(getGetTagsReportUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTagsReportQueryKey = (params?: GetTagsReportParams) => {
+  return [`/api/reports/tags`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetTagsReportQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTagsReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetTagsReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTagsReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetTagsReportQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getTagsReport>>> = ({
+    signal,
+  }) => getTagsReport(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTagsReport>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTagsReportQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTagsReport>>
+>;
+export type GetTagsReportQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Tag usage analytics
+ */
+
+export function useGetTagsReport<
+  TData = Awaited<ReturnType<typeof getTagsReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetTagsReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTagsReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTagsReportQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Day-of-week × hour activity heatmap
+ */
+export const getGetHeatmapReportUrl = (params?: GetHeatmapReportParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/reports/heatmap?${stringifiedParams}`
+    : `/api/reports/heatmap`;
+};
+
+export const getHeatmapReport = async (
+  params?: GetHeatmapReportParams,
+  options?: RequestInit,
+): Promise<HeatmapCell[]> => {
+  return customFetch<HeatmapCell[]>(getGetHeatmapReportUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetHeatmapReportQueryKey = (
+  params?: GetHeatmapReportParams,
+) => {
+  return [`/api/reports/heatmap`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetHeatmapReportQueryOptions = <
+  TData = Awaited<ReturnType<typeof getHeatmapReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetHeatmapReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getHeatmapReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetHeatmapReportQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getHeatmapReport>>
+  > = ({ signal }) => getHeatmapReport(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getHeatmapReport>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetHeatmapReportQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getHeatmapReport>>
+>;
+export type GetHeatmapReportQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Day-of-week × hour activity heatmap
+ */
+
+export function useGetHeatmapReport<
+  TData = Awaited<ReturnType<typeof getHeatmapReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetHeatmapReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getHeatmapReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetHeatmapReportQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Export a report as CSV
+ */
+export const getExportReportUrl = (params?: ExportReportParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/reports/export?${stringifiedParams}`
+    : `/api/reports/export`;
+};
+
+export const exportReport = async (
+  params?: ExportReportParams,
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getExportReportUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getExportReportQueryKey = (params?: ExportReportParams) => {
+  return [`/api/reports/export`, ...(params ? [params] : [])] as const;
+};
+
+export const getExportReportQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ExportReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof exportReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getExportReportQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof exportReport>>> = ({
     signal,
-  }) => exportReport({ signal, ...requestOptions });
+  }) => exportReport(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof exportReport>>,
@@ -3158,21 +3853,24 @@ export type ExportReportQueryResult = NonNullable<
 export type ExportReportQueryError = ErrorType<unknown>;
 
 /**
- * @summary Export agent performance report as CSV
+ * @summary Export a report as CSV
  */
 
 export function useExportReport<
   TData = Awaited<ReturnType<typeof exportReport>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof exportReport>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getExportReportQueryOptions(options);
+>(
+  params?: ExportReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof exportReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExportReportQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

@@ -819,13 +819,187 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
 
+  /reports/overview:
+    get:
+      operationId: getReportsOverview
+      tags: [analytics]
+      summary: Real-time KPI overview
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Overview KPIs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportsOverview"
+
+  /reports/chat-volume:
+    get:
+      operationId: getChatVolumeReport
+      tags: [analytics]
+      summary: Chat volume over time with status breakdown
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+        - name: groupBy
+          in: query
+          schema: { type: string, enum: [day, week, month] }
+      responses:
+        "200":
+          description: Volume buckets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatVolumePoint"
+
+  /reports/response-times:
+    get:
+      operationId: getResponseTimesReport
+      tags: [analytics]
+      summary: Response-time distribution and SLA stats
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+        - name: slaMinutes
+          in: query
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Response time stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseTimesReport"
+
+  /reports/customers:
+    get:
+      operationId: getCustomersReport
+      tags: [analytics]
+      summary: Customer analytics (top, repeat rate, growth)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+        - name: limit
+          in: query
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Customer report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomersReport"
+
+  /reports/branches:
+    get:
+      operationId: getBranchesReport
+      tags: [analytics]
+      summary: Branch performance breakdown
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Branch report
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BranchReportRow"
+
+  /reports/tags:
+    get:
+      operationId: getTagsReport
+      tags: [analytics]
+      summary: Tag usage analytics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Tag report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagsReport"
+
+  /reports/heatmap:
+    get:
+      operationId: getHeatmapReport
+      tags: [analytics]
+      summary: Day-of-week × hour activity heatmap
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Heatmap cells
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HeatmapCell"
+
   /reports/export:
     get:
       operationId: exportReport
       tags: [analytics]
-      summary: Export agent performance report as CSV
+      summary: Export a report as CSV
       security:
         - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [agents, conversations, customers, branches, tags]
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
       responses:
         "200":
           description: CSV file
@@ -1267,6 +1441,10 @@ components:
           type: integer
         totalAgents:
           type: integer
+        agentsAvailable:
+          type: integer
+        pendingChats:
+          type: integer
       required:
         - totalConversations
         - activeChats
@@ -1335,3 +1513,177 @@ components:
         - type
         - description
         - createdAt
+
+    ReportsOverview:
+      type: object
+      properties:
+        openChats: { type: integer }
+        pendingChats: { type: integer }
+        resolvedToday: { type: integer }
+        resolvedThisWeek: { type: integer }
+        newToday: { type: integer }
+        agentsOnline: { type: integer }
+        agentsBusy: { type: integer }
+        agentsTotal: { type: integer }
+        avgFirstResponseTodayMinutes: { type: number }
+      required:
+        - openChats
+        - pendingChats
+        - resolvedToday
+        - resolvedThisWeek
+        - newToday
+        - agentsOnline
+        - agentsBusy
+        - agentsTotal
+        - avgFirstResponseTodayMinutes
+
+    ChatVolumePoint:
+      type: object
+      properties:
+        bucket: { type: string }
+        total: { type: integer }
+        open: { type: integer }
+        pending: { type: integer }
+        resolved: { type: integer }
+      required: [bucket, total, open, pending, resolved]
+
+    ResponseTimeDistributionBucket:
+      type: object
+      properties:
+        bucket: { type: string }
+        count: { type: integer }
+      required: [bucket, count]
+
+    ResponseTimesReport:
+      type: object
+      properties:
+        slaMinutes: { type: integer }
+        total: { type: integer }
+        avgMinutes: { type: number }
+        minMinutes: { type: number }
+        maxMinutes: { type: number }
+        p50Minutes: { type: number }
+        p90Minutes: { type: number }
+        p95Minutes: { type: number }
+        withinSla: { type: integer }
+        breaches: { type: integer }
+        avgResolutionMinutes: { type: number }
+        medianResolutionMinutes: { type: number }
+        distribution:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResponseTimeDistributionBucket"
+      required:
+        - slaMinutes
+        - total
+        - avgMinutes
+        - minMinutes
+        - maxMinutes
+        - p50Minutes
+        - p90Minutes
+        - p95Minutes
+        - withinSla
+        - breaches
+        - avgResolutionMinutes
+        - medianResolutionMinutes
+        - distribution
+
+    CustomersReportSummary:
+      type: object
+      properties:
+        activeCustomers: { type: integer }
+        repeatCustomers: { type: integer }
+        repeatRatePercent: { type: number }
+        avgConversationsPerCustomer: { type: number }
+      required:
+        - activeCustomers
+        - repeatCustomers
+        - repeatRatePercent
+        - avgConversationsPerCustomer
+
+    TopCustomer:
+      type: object
+      properties:
+        customerId: { type: integer }
+        customerName: { type: string }
+        phone: { type: string }
+        branch:
+          type: string
+          nullable: true
+        conversationCount: { type: integer }
+        lastContactAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - customerId
+        - customerName
+        - phone
+        - conversationCount
+
+    CustomerGrowthPoint:
+      type: object
+      properties:
+        bucket: { type: string }
+        count: { type: integer }
+      required: [bucket, count]
+
+    CustomersReport:
+      type: object
+      properties:
+        summary:
+          $ref: "#/components/schemas/CustomersReportSummary"
+        topCustomers:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopCustomer"
+        customerGrowth:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomerGrowthPoint"
+      required: [summary, topCustomers, customerGrowth]
+
+    BranchReportRow:
+      type: object
+      properties:
+        branch: { type: string }
+        conversationCount: { type: integer }
+        resolvedCount: { type: integer }
+        openCount: { type: integer }
+        customerCount: { type: integer }
+        avgResponseMinutes: { type: number }
+      required:
+        - branch
+        - conversationCount
+        - resolvedCount
+        - openCount
+        - customerCount
+        - avgResponseMinutes
+
+    TagCount:
+      type: object
+      properties:
+        tag: { type: string }
+        count: { type: integer }
+      required: [tag, count]
+
+    TagsReport:
+      type: object
+      properties:
+        conversationTags:
+          type: array
+          items:
+            $ref: "#/components/schemas/TagCount"
+        customerTags:
+          type: array
+          items:
+            $ref: "#/components/schemas/TagCount"
+      required: [conversationTags, customerTags]
+
+    HeatmapCell:
+      type: object
+      properties:
+        dayOfWeek: { type: integer }
+        hour: { type: integer }
+        count: { type: integer }
+      required: [dayOfWeek, hour, count]

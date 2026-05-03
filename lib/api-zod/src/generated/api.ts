@@ -650,6 +650,8 @@ export const GetDashboardStatsResponse = zod.object({
   newConversationsToday: zod.number(),
   totalCustomers: zod.number(),
   totalAgents: zod.number(),
+  agentsAvailable: zod.number().optional(),
+  pendingChats: zod.number().optional(),
 });
 
 /**
@@ -755,4 +757,172 @@ export const UpdateMyStatusResponse = zod.object({
   role: zod.enum(["admin", "agent"]),
   status: zod.enum(["available", "busy", "offline"]),
   createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Real-time KPI overview
+ */
+export const GetReportsOverviewResponse = zod.object({
+  openChats: zod.number(),
+  pendingChats: zod.number(),
+  resolvedToday: zod.number(),
+  resolvedThisWeek: zod.number(),
+  newToday: zod.number(),
+  agentsOnline: zod.number(),
+  agentsBusy: zod.number(),
+  agentsTotal: zod.number(),
+  avgFirstResponseTodayMinutes: zod.number(),
+});
+
+/**
+ * @summary Chat volume over time with status breakdown
+ */
+export const GetChatVolumeReportQueryParams = zod.object({
+  from: zod.date().optional(),
+  to: zod.date().optional(),
+  groupBy: zod.enum(["day", "week", "month"]).optional(),
+});
+
+export const GetChatVolumeReportResponseItem = zod.object({
+  bucket: zod.string(),
+  total: zod.number(),
+  open: zod.number(),
+  pending: zod.number(),
+  resolved: zod.number(),
+});
+export const GetChatVolumeReportResponse = zod.array(
+  GetChatVolumeReportResponseItem,
+);
+
+/**
+ * @summary Response-time distribution and SLA stats
+ */
+export const GetResponseTimesReportQueryParams = zod.object({
+  from: zod.date().optional(),
+  to: zod.date().optional(),
+  slaMinutes: zod.coerce.number().optional(),
+});
+
+export const GetResponseTimesReportResponse = zod.object({
+  slaMinutes: zod.number(),
+  total: zod.number(),
+  avgMinutes: zod.number(),
+  minMinutes: zod.number(),
+  maxMinutes: zod.number(),
+  p50Minutes: zod.number(),
+  p90Minutes: zod.number(),
+  p95Minutes: zod.number(),
+  withinSla: zod.number(),
+  breaches: zod.number(),
+  avgResolutionMinutes: zod.number(),
+  medianResolutionMinutes: zod.number(),
+  distribution: zod.array(
+    zod.object({
+      bucket: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+});
+
+/**
+ * @summary Customer analytics (top, repeat rate, growth)
+ */
+export const GetCustomersReportQueryParams = zod.object({
+  from: zod.date().optional(),
+  to: zod.date().optional(),
+  limit: zod.coerce.number().optional(),
+});
+
+export const GetCustomersReportResponse = zod.object({
+  summary: zod.object({
+    activeCustomers: zod.number(),
+    repeatCustomers: zod.number(),
+    repeatRatePercent: zod.number(),
+    avgConversationsPerCustomer: zod.number(),
+  }),
+  topCustomers: zod.array(
+    zod.object({
+      customerId: zod.number(),
+      customerName: zod.string(),
+      phone: zod.string(),
+      branch: zod.string().nullish(),
+      conversationCount: zod.number(),
+      lastContactAt: zod.coerce.date().nullish(),
+    }),
+  ),
+  customerGrowth: zod.array(
+    zod.object({
+      bucket: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+});
+
+/**
+ * @summary Branch performance breakdown
+ */
+export const GetBranchesReportQueryParams = zod.object({
+  from: zod.date().optional(),
+  to: zod.date().optional(),
+});
+
+export const GetBranchesReportResponseItem = zod.object({
+  branch: zod.string(),
+  conversationCount: zod.number(),
+  resolvedCount: zod.number(),
+  openCount: zod.number(),
+  customerCount: zod.number(),
+  avgResponseMinutes: zod.number(),
+});
+export const GetBranchesReportResponse = zod.array(
+  GetBranchesReportResponseItem,
+);
+
+/**
+ * @summary Tag usage analytics
+ */
+export const GetTagsReportQueryParams = zod.object({
+  from: zod.date().optional(),
+  to: zod.date().optional(),
+});
+
+export const GetTagsReportResponse = zod.object({
+  conversationTags: zod.array(
+    zod.object({
+      tag: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  customerTags: zod.array(
+    zod.object({
+      tag: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+});
+
+/**
+ * @summary Day-of-week × hour activity heatmap
+ */
+export const GetHeatmapReportQueryParams = zod.object({
+  from: zod.date().optional(),
+  to: zod.date().optional(),
+});
+
+export const GetHeatmapReportResponseItem = zod.object({
+  dayOfWeek: zod.number(),
+  hour: zod.number(),
+  count: zod.number(),
+});
+export const GetHeatmapReportResponse = zod.array(GetHeatmapReportResponseItem);
+
+/**
+ * @summary Export a report as CSV
+ */
+export const ExportReportQueryParams = zod.object({
+  type: zod
+    .enum(["agents", "conversations", "customers", "branches", "tags"])
+    .optional(),
+  from: zod.date().optional(),
+  to: zod.date().optional(),
 });
