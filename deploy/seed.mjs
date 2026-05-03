@@ -27,12 +27,12 @@ async function main() {
 
     // -------------------- USERS --------------------
     const users = [
-      ["layla@lotuspharmacies.com", "Layla Hassan",   "admin", "admin123"],
-      ["ahmed@lotuspharmacies.com", "Ahmed Mostafa",  "agent", "agent123"],
-      ["sara@lotuspharmacies.com",  "Sara Ibrahim",   "agent", "agent123"],
-      ["omar@lotuspharmacies.com",  "Omar Khaled",    "agent", "agent123"],
-      ["nora@lotuspharmacies.com",  "Nora Adel",      "agent", "agent123"],
-      ["youssef@lotuspharmacies.com","Youssef Tarek", "agent", "agent123"],
+      ["layla@lotuspharmacies.com",  "Layla Hassan",   "admin", "admin123"],
+      ["omar@lotuspharmacies.com",   "Omar Khalil",    "admin", "admin123"],
+      ["sara@lotuspharmacies.com",   "Sara Ahmed",     "agent", "agent123"],
+      ["youssef@lotuspharmacies.com","Youssef Nabil",  "agent", "agent123"],
+      ["hana@lotuspharmacies.com",   "Hana Mostafa",   "agent", "agent123"],
+      ["kareem@lotuspharmacies.com", "Kareem Farouk",  "agent", "agent123"],
     ];
     for (const [email, name, role, pwd] of users) {
       await client.query(
@@ -129,11 +129,10 @@ async function main() {
 
     // -------------------- CONVERSATIONS --------------------
     const agentEmails = [
-      "ahmed@lotuspharmacies.com",
       "sara@lotuspharmacies.com",
-      "omar@lotuspharmacies.com",
-      "nora@lotuspharmacies.com",
       "youssef@lotuspharmacies.com",
+      "hana@lotuspharmacies.com",
+      "kareem@lotuspharmacies.com",
     ];
     const agentRows = await client.query(
       `SELECT id, email FROM users WHERE email = ANY($1::text[])`,

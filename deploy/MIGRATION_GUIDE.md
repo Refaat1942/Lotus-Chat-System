@@ -124,14 +124,14 @@ http://187.124.15.14
 
 Log in with the seeded admin account:
 
-| Email                          | Password   | Role  |
-|--------------------------------|------------|-------|
-| `layla@lotuspharmacies.com`    | `admin123` | Admin |
-| `ahmed@lotuspharmacies.com`    | `agent123` | Agent |
-| `sara@lotuspharmacies.com`     | `agent123` | Agent |
-| `omar@lotuspharmacies.com`     | `agent123` | Agent |
-| `nora@lotuspharmacies.com`     | `agent123` | Agent |
-| `youssef@lotuspharmacies.com`  | `agent123` | Agent |
+| Email                           | Password   | Role  |
+|---------------------------------|------------|-------|
+| `layla@lotuspharmacies.com`     | `admin123` | Admin |
+| `omar@lotuspharmacies.com`      | `admin123` | Admin |
+| `sara@lotuspharmacies.com`      | `agent123` | Agent |
+| `youssef@lotuspharmacies.com`   | `agent123` | Agent |
+| `hana@lotuspharmacies.com`      | `agent123` | Agent |
+| `kareem@lotuspharmacies.com`    | `agent123` | Agent |
 
 > **Important:** Change the admin password once you're logged in.
 
