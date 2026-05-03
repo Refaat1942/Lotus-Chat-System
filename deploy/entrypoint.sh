@@ -19,14 +19,10 @@ pnpm exec drizzle-kit push --config ./drizzle.config.ts || {
 }
 cd /app
 
-# ----- 3. Run the seed if requested (idempotent) -----
-if [[ "${RUN_SEED:-true}" == "true" ]]; then
-  echo "==> Seeding database (idempotent — skips existing rows)..."
-  node /app/deploy/seed.mjs || {
-    echo "!!! seed failed"
-    exit 1
-  }
-fi
+# ----- 3. Seed runs automatically inside the API server on startup -----
+# The api-server has a built-in idempotent bootstrap-seed that creates demo
+# users + tags + customers + conversations on first boot when the DB is empty.
+# No external seed step is needed.
 
 # ----- 4. Start the API server -----
 echo "==> Starting API server"
