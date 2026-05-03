@@ -91,26 +91,47 @@ export async function bootstrapSeed(): Promise<void> {
     // 2) Demo data is NEVER seeded in production unless explicitly enabled.
     //    Default credentials (admin123 / agent123) would otherwise create
     //    trivially guessable admin access on a fresh prod database.
+    //    Accept either SEED_DEMO_DATA=true (canonical) or RUN_SEED=true
+    //    (used by the docker-compose / Hostinger VPS deploy) as opt-in.
     const isProd = process.env["NODE_ENV"] === "production";
-    const demoOptIn = process.env["SEED_DEMO_DATA"] === "true";
-    if (isProd && !demoOptIn) {
+    const demoOptIn =
+      process.env["SEED_DEMO_DATA"] === "true" ||
+      process.env["RUN_SEED"] === "true";
+    const forceReseed = process.env["FORCE_RESEED"] === "true";
+    if (isProd && !demoOptIn && !forceReseed) {
       logger.info(
-        "bootstrap-seed: skipping demo seed in production (set SEED_DEMO_DATA=true to override)",
+        "bootstrap-seed: skipping demo seed in production (set SEED_DEMO_DATA=true or RUN_SEED=true to override)",
       );
       return;
     }
 
-    // 3) Users — only if table empty
+    // 3) FORCE_RESEED=true wipes only the demo data tables (conversations,
+    //    messages, customers, tags, quick replies) and reseeds them. Users
+    //    and settings are preserved so existing logins keep working. Use
+    //    this when the seed schema changes (e.g. fixing bad timestamps).
+    if (forceReseed) {
+      logger.warn("bootstrap-seed: FORCE_RESEED=true — wiping demo data tables");
+      // Order matters: messages -> conversations -> customers -> tags
+      // -> quick_replies. Foreign keys cascade where possible but we do
+      // it explicitly to be safe across schema versions.
+      await db.execute(sql`TRUNCATE TABLE messages, conversations, customers, tags, quick_replies RESTART IDENTITY CASCADE`);
+    }
+
+    // 4) Users — only if table empty (force-reseed keeps users intact)
     const [{ count: userCount }] = await db
       .select({ count: sql<number>`COUNT(*)::int` })
       .from(usersTable);
 
-    if (userCount > 0) {
+    if (userCount > 0 && !forceReseed) {
       logger.info({ userCount }, "bootstrap-seed: users already present, skipping demo data");
       return;
     }
 
-    logger.warn("bootstrap-seed: empty database detected, seeding demo data…");
+    logger.warn(
+      forceReseed
+        ? "bootstrap-seed: reseeding demo conversations/customers (users preserved)"
+        : "bootstrap-seed: empty database detected, seeding demo data…",
+    );
 
     for (const [email, name, role, pwd] of USERS) {
       const passwordHash = await bcrypt.hash(pwd, 10);
@@ -179,6 +200,13 @@ export async function bootstrapSeed(): Promise<void> {
       const cTags = i % 2 === 0 ? ["Follow-up"] : [];
       const minutesAgo = (i + 1) * 17;
       const lastAt = new Date(Date.now() - minutesAgo * 60 * 1000);
+      // Customer reaches out first — that's when the conversation begins.
+      // Make the conversation row's created_at match the inbound message so
+      // first-response-time = (agent_reply - conv_created) is positive and
+      // realistic (here: a 1–10 minute reply window per row).
+      const customerAt = new Date(
+        Date.now() - (minutesAgo + 5 + (i % 10)) * 60 * 1000,
+      );
 
       const [conv] = await db
         .insert(conversationsTable)
@@ -190,7 +218,8 @@ export async function bootstrapSeed(): Promise<void> {
           lastMessage: lastMsg,
           lastMessageAt: lastAt,
           unreadCount: i % 3,
-          resolvedAt: status === "resolved" ? new Date() : null,
+          createdAt: customerAt,
+          resolvedAt: status === "resolved" ? lastAt : null,
         })
         .returning({ id: conversationsTable.id });
 
@@ -201,7 +230,7 @@ export async function bootstrapSeed(): Promise<void> {
           senderType: "customer",
           body: SNIPPETS[(i + 3) % SNIPPETS.length],
           status: "delivered",
-          createdAt: new Date(Date.now() - (minutesAgo + 5) * 60 * 1000),
+          createdAt: customerAt,
         },
         {
           conversationId: conv.id,
