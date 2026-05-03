@@ -44,7 +44,7 @@ services:
     depends_on:
       - api
     ports:
-      - "80:80"
+      - "${WEB_PORT:-8090}:80"
     networks:
       - lotus_net
 
