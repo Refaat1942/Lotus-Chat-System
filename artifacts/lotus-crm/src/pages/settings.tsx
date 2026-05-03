@@ -1,12 +1,16 @@
 import React from "react";
 import { 
-  useListUsers, useCreateUser, useDeleteUser,
+  useListUsers, useCreateUser, useDeleteUser, useUpdateUser,
   useListTags, useCreateTag, useDeleteTag,
   useListQuickReplies, useCreateQuickReply, useDeleteQuickReply,
   useGetSettings, useUpdateSettings,
   getListUsersQueryKey, getListTagsQueryKey, getListQuickRepliesQueryKey,
   getGetSettingsQueryKey
 } from "@workspace/api-client-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import { Pencil } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -84,12 +88,118 @@ const createUserSchema = z.object({
   role: z.enum(["admin", "agent"]),
 });
 
+const editUserSchema = z.object({
+  name: z.string().min(2, "Name required"),
+  email: z.string().email("Valid email required"),
+  role: z.enum(["admin", "agent"]),
+  password: z.string().optional(),
+});
+
+type EditableUser = { id: number; name: string; email: string; role: string };
+
+function EditUserDialog({
+  user,
+  open,
+  onOpenChange,
+}: {
+  user: EditableUser | null;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const updateMut = useUpdateUser();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const form = useForm<z.infer<typeof editUserSchema>>({
+    resolver: zodResolver(editUserSchema),
+    values: user
+      ? { name: user.name, email: user.email, role: user.role as "admin" | "agent", password: "" }
+      : { name: "", email: "", role: "agent", password: "" },
+  });
+
+  const onSubmit = (values: z.infer<typeof editUserSchema>) => {
+    if (!user) return;
+    const payload: { name: string; email: string; role: "admin" | "agent"; password?: string } = {
+      name: values.name,
+      email: values.email,
+      role: values.role,
+    };
+    if (values.password && values.password.length >= 6) payload.password = values.password;
+    updateMut.mutate(
+      { id: user.id, data: payload },
+      {
+        onSuccess: () => {
+          toast({ title: "User updated" });
+          queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
+          onOpenChange(false);
+        },
+        onError: () => toast({ title: "Could not update user", variant: "destructive" }),
+      },
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit user</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField control={form.control} name="name" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs">Full Name</FormLabel>
+                <FormControl><Input className="h-9 text-sm" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}/>
+            <FormField control={form.control} name="email" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs">Email</FormLabel>
+                <FormControl><Input type="email" className="h-9 text-sm" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}/>
+            <FormField control={form.control} name="role" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs">Role</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="agent">Agent</SelectItem>
+                    <SelectItem value="admin">Administrator</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormItem>
+            )}/>
+            <FormField control={form.control} name="password" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs">New password (leave blank to keep)</FormLabel>
+                <FormControl><Input type="password" className="h-9 text-sm" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}/>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button type="submit" disabled={updateMut.isPending}>
+                {updateMut.isPending ? "Saving…" : "Save changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function UsersSettings() {
   const { data: users, isLoading } = useListUsers();
   const createMut = useCreateUser();
   const deleteMut = useDeleteUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [editing, setEditing] = React.useState<EditableUser | null>(null);
 
   const form = useForm<z.infer<typeof createUserSchema>>({
     resolver: zodResolver(createUserSchema),
@@ -119,6 +229,7 @@ function UsersSettings() {
 
   return (
     <div className="grid md:grid-cols-3 gap-6">
+      <EditUserDialog user={editing} open={editing !== null} onOpenChange={(v) => { if (!v) setEditing(null); }} />
       <Card className="md:col-span-2 shadow-sm">
         <CardHeader>
           <CardTitle>Team Members</CardTitle>
@@ -149,9 +260,14 @@ function UsersSettings() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(u.id)} className="text-destructive hover:bg-destructive/10 h-8 w-8">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => setEditing({ id: u.id, name: u.name, email: u.email, role: u.role })} className="text-muted-foreground hover:text-primary h-8 w-8">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(u.id)} className="text-destructive hover:bg-destructive/10 h-8 w-8">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

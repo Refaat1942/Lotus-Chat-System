@@ -149,14 +149,23 @@ router.patch("/conversations/:id", requireAuth, async (req: AuthRequest, res) =>
   const id = Number(req.params.id);
   const existing = await getConversationWithRelations(id);
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
-  if (req.user?.role === "agent" && existing.assignedAgentId !== null && existing.assignedAgentId !== req.user.id) {
+  // Agents can only patch conversations explicitly assigned to them.
+  // Unassigned conversations require the dedicated /assign endpoint or admin.
+  if (req.user?.role === "agent" && existing.assignedAgentId !== req.user.id) {
     res.status(403).json({ error: "Forbidden" }); return;
   }
   const { tags, status, assignedAgentId } = req.body;
   const updates: Record<string, unknown> = {};
   if (tags !== undefined) updates.tags = tags;
   if (status !== undefined) updates.status = status;
-  if (assignedAgentId !== undefined) updates.assignedAgentId = assignedAgentId;
+  // Only admins may reassign conversations to another agent.
+  if (assignedAgentId !== undefined) {
+    if (req.user?.role !== "admin") {
+      res.status(403).json({ error: "Only admins can reassign conversations" });
+      return;
+    }
+    updates.assignedAgentId = assignedAgentId;
+  }
   if (Object.keys(updates).length === 0) { res.json(existing); return; }
   await db.update(conversationsTable).set(updates).where(eq(conversationsTable.id, id));
   const full = await getConversationWithRelations(id);
