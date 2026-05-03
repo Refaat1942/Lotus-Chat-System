@@ -49,3 +49,12 @@ export function requireAdmin(req: AuthRequest, res: Response, next: NextFunction
   }
   next();
 }
+
+export function requireAgent(req: AuthRequest, res: Response, next: NextFunction) {
+  const role = req.user?.role;
+  if (role !== "agent" && role !== "admin") {
+    res.status(403).json({ error: "Agent access required" });
+    return;
+  }
+  next();
+}

@@ -167,9 +167,11 @@ export async function bootstrapSeed(): Promise<void> {
     );
     const agentEmails = Object.keys(agentIdByEmail);
 
-    // Conversations + 2 messages each
-    for (let i = 0; i < customerIds.length; i++) {
-      const customerId = customerIds[i];
+    // Conversations + 2 messages each — seed 55 conversations across the
+    // 22 customers (~2.5 per customer) to give analytics a richer dataset.
+    const TOTAL_CONVERSATIONS = 55;
+    for (let i = 0; i < TOTAL_CONVERSATIONS; i++) {
+      const customerId = customerIds[i % customerIds.length];
       const agentEmail = agentEmails[i % agentEmails.length];
       const agentId = agentIdByEmail[agentEmail];
       const status = STATUSES[i % STATUSES.length];

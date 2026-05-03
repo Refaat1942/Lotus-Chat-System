@@ -33,11 +33,17 @@ router.post("/conversations/:id/messages", requireAuth, async (req: AuthRequest,
   const allowed = await canAccessConversation(req.user!.id, req.user!.role, convId);
   if (!allowed) { res.status(403).json({ error: "Forbidden" }); return; }
 
-  const { body, senderType, isNote, attachments } = req.body;
-  if (!body || !senderType) {
-    res.status(400).json({ error: "body and senderType required" });
+  const { body, isNote, attachments } = req.body;
+  if (!body) {
+    res.status(400).json({ error: "body required" });
     return;
   }
+
+  // Sender identity is ALWAYS derived from the authenticated user — never
+  // trust a client-supplied senderType, which would let any logged-in user
+  // impersonate the customer or system and corrupt analytics.
+  const senderType: "agent" | "system" =
+    req.user!.role === "admin" || req.user!.role === "agent" ? "agent" : "system";
 
   const [message] = await db.insert(messagesTable).values({
     conversationId: convId,
