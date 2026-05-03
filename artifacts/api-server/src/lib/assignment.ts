@@ -157,7 +157,7 @@ export async function tryAutoAssign(
     if (conv.status === "resolved") return { agentId: null, queued: false };
 
     // 2) Pick a candidate from currently-available agents.
-    const candidates = (await listAvailableAgents(tx)).filter(
+    const candidates = (await listAvailableAgents(tx as unknown as typeof db)).filter(
       (a) => a.load < settings.maxChatsPerAgent,
     );
     const agentId = chooseAgent(candidates, settings.assignmentStrategy);

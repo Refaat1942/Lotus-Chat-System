@@ -88,7 +88,19 @@ export async function bootstrapSeed(): Promise<void> {
     // 1) Settings singleton
     await db.insert(settingsTable).values({ id: 1 }).onConflictDoNothing();
 
-    // 2) Users — only if table empty
+    // 2) Demo data is NEVER seeded in production unless explicitly enabled.
+    //    Default credentials (admin123 / agent123) would otherwise create
+    //    trivially guessable admin access on a fresh prod database.
+    const isProd = process.env["NODE_ENV"] === "production";
+    const demoOptIn = process.env["SEED_DEMO_DATA"] === "true";
+    if (isProd && !demoOptIn) {
+      logger.info(
+        "bootstrap-seed: skipping demo seed in production (set SEED_DEMO_DATA=true to override)",
+      );
+      return;
+    }
+
+    // 3) Users — only if table empty
     const [{ count: userCount }] = await db
       .select({ count: sql<number>`COUNT(*)::int` })
       .from(usersTable);

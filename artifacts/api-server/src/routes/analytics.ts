@@ -649,7 +649,8 @@ router.get("/reports/export", requireAuth, async (req, res) => {
     rows = result.rows as Record<string, unknown>[];
     filename = "tags.csv";
   } else {
-    return res.status(400).json({ error: `Unknown export type: ${type}` });
+    res.status(400).json({ error: `Unknown export type: ${type}` });
+    return;
   }
 
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
