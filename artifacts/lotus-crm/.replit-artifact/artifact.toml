@@ -20,3 +20,13 @@ run = "pnpm --filter @workspace/lotus-crm run dev"
 [services.env]
 PORT = "23414"
 BASE_PATH = "/"
+
+[services.production]
+serve = "static"
+publicDir = "artifacts/lotus-crm/dist/public"
+
+[services.production.build]
+args = ["sh", "-c", "pnpm --filter @workspace/lotus-crm run build"]
+
+[services.production.build.env]
+NODE_ENV = "production"
