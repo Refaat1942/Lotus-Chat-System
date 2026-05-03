@@ -1351,13 +1351,15 @@ components:
         - createdAt
 
     SendMessageBody:
+      description: |
+        Body for posting a new message into a conversation. NOTE:
+        `senderType` is server-derived from the authenticated user
+        and any client-supplied value is ignored. Only `body` is
+        required from clients.
       type: object
       properties:
         body:
           type: string
-        senderType:
-          type: string
-          enum: [agent, customer, system]
         isNote:
           type: boolean
         attachments:
@@ -1366,7 +1368,6 @@ components:
             type: string
       required:
         - body
-        - senderType
 
     Tag:
       type: object

@@ -236,18 +236,15 @@ export interface Message {
   createdAt: string;
 }
 
-export type SendMessageBodySenderType =
-  (typeof SendMessageBodySenderType)[keyof typeof SendMessageBodySenderType];
+/**
+ * Body for posting a new message into a conversation. NOTE:
+`senderType` is server-derived from the authenticated user
+and any client-supplied value is ignored. Only `body` is
+required from clients.
 
-export const SendMessageBodySenderType = {
-  agent: "agent",
-  customer: "customer",
-  system: "system",
-} as const;
-
+ */
 export interface SendMessageBody {
   body: string;
-  senderType: SendMessageBodySenderType;
   isNote?: boolean;
   attachments?: string[];
 }

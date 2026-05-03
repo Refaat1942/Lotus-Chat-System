@@ -238,7 +238,7 @@ function ChatCenter({ conversationId, currentUserId, currentUserName, message, s
   const handleSend = () => {
     if (!message.trim()) return;
     sendMessageMut.mutate(
-      { id: conversationId, data: { body: message, senderType: "agent", isNote } },
+      { id: conversationId, data: { body: message, isNote } },
       {
         onSuccess: () => {
           setMessage("");

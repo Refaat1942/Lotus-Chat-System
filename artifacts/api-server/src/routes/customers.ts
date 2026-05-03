@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { customersTable, conversationsTable } from "@workspace/db";
-import { eq, ilike, sql, and, SQL } from "drizzle-orm";
+import { eq, ilike, sql, and, or, SQL } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
 
 const router = Router();
@@ -10,7 +10,21 @@ router.get("/customers", requireAuth, async (req, res) => {
   const { search, tag, branch } = req.query as Record<string, string>;
 
   const conditions: SQL[] = [];
-  if (search) conditions.push(ilike(customersTable.name, `%${search}%`));
+  if (search) {
+    // Match across name, phone, and any tag — matches the UI hint
+    // "Search by name, phone, or tags".
+    const like = `%${search}%`;
+    const tagMatch = sql<boolean>`EXISTS (
+      SELECT 1 FROM unnest(${customersTable.tags}) t
+      WHERE t ILIKE ${like}
+    )`;
+    const combined = or(
+      ilike(customersTable.name, like),
+      ilike(customersTable.phone, like),
+      tagMatch,
+    );
+    if (combined) conditions.push(combined);
+  }
   if (branch) conditions.push(eq(customersTable.branch, branch));
   if (tag) conditions.push(sql`${customersTable.tags} @> ARRAY[${tag}]::text[]`);
 

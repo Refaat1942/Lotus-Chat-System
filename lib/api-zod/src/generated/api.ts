@@ -562,12 +562,15 @@ export const SendMessageParams = zod.object({
   id: zod.coerce.number(),
 });
 
-export const SendMessageBody = zod.object({
-  body: zod.string(),
-  senderType: zod.enum(["agent", "customer", "system"]),
-  isNote: zod.boolean().optional(),
-  attachments: zod.array(zod.string()).optional(),
-});
+export const SendMessageBody = zod
+  .object({
+    body: zod.string(),
+    isNote: zod.boolean().optional(),
+    attachments: zod.array(zod.string()).optional(),
+  })
+  .describe(
+    "Body for posting a new message into a conversation. NOTE:\n`senderType` is server-derived from the authenticated user\nand any client-supplied value is ignored. Only `body` is\nrequired from clients.\n",
+  );
 
 /**
  * @summary List tags
