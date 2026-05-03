@@ -73,8 +73,10 @@ async function canAccessConversation(
     .from(conversationsTable)
     .where(eq(conversationsTable.id, conversationId));
   if (!conv) return false;
-  // Allow agents to view unassigned conversations + ones assigned to them
-  return conv.assignedAgentId === null || conv.assignedAgentId === userId;
+  // Aligned with HTTP policy: agents may only access conversations that are
+  // explicitly assigned to them. Unassigned rooms are admin-only over the
+  // socket; agents must claim via POST /conversations/:id/assign first.
+  return conv.assignedAgentId === userId;
 }
 
 io.on("connection", (rawSocket) => {

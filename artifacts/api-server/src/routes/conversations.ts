@@ -177,8 +177,16 @@ router.post("/conversations/:id/assign", requireAuth, async (req: AuthRequest, r
   const { agentId } = req.body;
   const existing = await getConversationWithRelations(id);
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
-  if (req.user?.role === "agent" && existing.assignedAgentId !== req.user.id) {
-    res.status(403).json({ error: "Forbidden" }); return;
+  // Agents may only self-claim conversations that are currently unassigned.
+  // They cannot reassign someone else's conversation or assign to a different
+  // agent. Admins may assign any conversation to any agent (or unassign).
+  if (req.user?.role === "agent") {
+    if (existing.assignedAgentId !== null) {
+      res.status(403).json({ error: "Forbidden" }); return;
+    }
+    if (agentId !== req.user.id) {
+      res.status(403).json({ error: "Agents can only claim for themselves" }); return;
+    }
   }
   await db.update(conversationsTable).set({ assignedAgentId: agentId || null }).where(eq(conversationsTable.id, id));
   const full = await getConversationWithRelations(id);
