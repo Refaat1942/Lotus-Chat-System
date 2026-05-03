@@ -139,7 +139,15 @@ router.put("/conversations/:id", requireAuth, async (req: AuthRequest, res) => {
   const updates: Record<string, unknown> = {};
   if (tags !== undefined) updates.tags = tags;
   if (status !== undefined) updates.status = status;
-  if (assignedAgentId !== undefined) updates.assignedAgentId = assignedAgentId;
+  // Reassignment is admin-only; agents must use POST /conversations/:id/assign
+  // to self-claim. This keeps PUT, PATCH, and /assign on a single policy.
+  if (assignedAgentId !== undefined) {
+    if (req.user?.role !== "admin") {
+      res.status(403).json({ error: "Only admins can reassign conversations" });
+      return;
+    }
+    updates.assignedAgentId = assignedAgentId;
+  }
   await db.update(conversationsTable).set(updates).where(eq(conversationsTable.id, id));
   const full = await getConversationWithRelations(id);
   res.json(full);
