@@ -28,8 +28,10 @@ app.use(
   }),
 );
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Bumped from default 100kb so branding logo data-URLs (up to ~700KB
+// after base64 encoding) can be saved via PUT /api/settings.
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 
 app.use("/api", router);
 
