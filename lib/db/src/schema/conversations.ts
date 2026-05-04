@@ -15,9 +15,17 @@ export const conversationsTable = pgTable("conversations", {
   status: text("status", { enum: ["open", "resolved", "pending"] })
     .notNull()
     .default("open"),
+  channel: text("channel", {
+    enum: ["whatsapp", "messenger", "instagram", "sms", "web"],
+  })
+    .notNull()
+    .default("whatsapp"),
   tags: text("tags").array().notNull().default([]),
   lastMessage: text("last_message"),
   lastMessageAt: timestamp("last_message_at"),
+  lastSenderType: text("last_sender_type", {
+    enum: ["agent", "customer", "system"],
+  }),
   unreadCount: integer("unread_count").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   resolvedAt: timestamp("resolved_at"),

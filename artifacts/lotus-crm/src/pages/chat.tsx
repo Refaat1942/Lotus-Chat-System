@@ -59,6 +59,44 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { FaWhatsapp, FaFacebookMessenger, FaInstagram, FaSms } from "react-icons/fa";
 import { Globe } from "lucide-react";
+import { useSearch } from "wouter";
+import { useInsights } from "@/lib/api-extra";
+
+type ConvWithChannel = {
+  id: number;
+  channel?: string;
+  lastSenderType?: "agent" | "customer" | "system" | null;
+  lastMessageAt?: string | null;
+  status: string;
+};
+
+function getChatStatus(
+  conv: ConvWithChannel,
+  slaMinutes: number,
+): { label: "Waiting" | "Late" | "Replied" | "Resolved" | "Pending"; tone: string } {
+  if (conv.status === "resolved")
+    return { label: "Resolved", tone: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" };
+  if (conv.status === "pending")
+    return { label: "Pending", tone: "bg-slate-500/10 text-slate-600 border-slate-500/20" };
+  if (conv.lastSenderType === "customer") {
+    const ageMin = conv.lastMessageAt
+      ? Math.max(0, (Date.now() - new Date(conv.lastMessageAt).getTime()) / 60000)
+      : 0;
+    if (ageMin >= slaMinutes)
+      return { label: "Late", tone: "bg-rose-500/10 text-rose-600 border-rose-500/20 animate-pulse" };
+    return { label: "Waiting", tone: "bg-amber-500/10 text-amber-600 border-amber-500/20" };
+  }
+  return { label: "Replied", tone: "bg-blue-500/10 text-blue-600 border-blue-500/20" };
+}
+
+function ChannelGlyph({ channel }: { channel?: string }) {
+  const c = (channel ?? "whatsapp").toLowerCase();
+  if (c === "messenger") return <FaFacebookMessenger className="h-3.5 w-3.5 text-blue-500" />;
+  if (c === "instagram") return <FaInstagram className="h-3.5 w-3.5 text-pink-500" />;
+  if (c === "sms") return <FaSms className="h-3.5 w-3.5 text-slate-500" />;
+  if (c === "web") return <Globe className="h-3.5 w-3.5 text-purple-500" />;
+  return <FaWhatsapp className="h-3.5 w-3.5 text-emerald-500" />;
+}
 
 export default function ChatPage() {
   const [selectedConvId, setSelectedConvId] = useState<number | null>(null);
@@ -67,6 +105,21 @@ export default function ChatPage() {
   const [message, setMessage] = useState("");
   const { data: user } = useGetMe();
 
+  // ?channel=whatsapp|messenger|... — set from sidebar links.
+  // ?conv=NNN — deep-link from AI Insights page to open a specific chat.
+  const searchString = useSearch();
+  const channelFilter = React.useMemo(() => {
+    const v = new URLSearchParams(searchString).get("channel");
+    return v && ["whatsapp", "messenger", "instagram", "sms", "web"].includes(v) ? v : null;
+  }, [searchString]);
+  useEffect(() => {
+    const id = new URLSearchParams(searchString).get("conv");
+    if (id && /^\d+$/.test(id)) setSelectedConvId(Number(id));
+  }, [searchString]);
+
+  const { data: insights } = useInsights();
+  const slaMinutes = insights?.slaMinutes ?? 15;
+
   const insertReply = useCallback((text: string) => {
     setMessage((prev) => {
       const trimmed = (prev ?? "").trim();
@@ -74,10 +127,21 @@ export default function ChatPage() {
     });
   }, []);
 
-  const { data: conversations, isLoading: convLoading } = useListConversations({
+  const { data: convsRaw, isLoading: convLoading } = useListConversations({
     status: statusFilter === "all" ? undefined : statusFilter,
     search: search || undefined
   });
+
+  // Channel filter is applied client-side: API list endpoint already returns
+  // `channel` for every row (added to the select), so we filter here without
+  // a round-trip and keep React Query's cache key stable.
+  const conversations = React.useMemo(() => {
+    if (!convsRaw) return convsRaw;
+    if (!channelFilter) return convsRaw;
+    return convsRaw.filter(
+      (c) => ((c as unknown as { channel?: string }).channel ?? "whatsapp") === channelFilter,
+    );
+  }, [convsRaw, channelFilter]);
 
   return (
     <div className="flex h-full w-full bg-background overflow-hidden">
@@ -85,7 +149,15 @@ export default function ChatPage() {
       <div className="w-80 flex-shrink-0 border-r border-border flex flex-col bg-sidebar">
         <div className="p-4 border-b border-border flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-lg tracking-tight">Inbox</h2>
+            <h2 className="font-semibold text-lg tracking-tight flex items-center gap-2">
+              Inbox
+              {channelFilter && (
+                <Badge variant="outline" className="text-[10px] capitalize gap-1 font-normal">
+                  <ChannelGlyph channel={channelFilter} />
+                  {channelFilter}
+                </Badge>
+              )}
+            </h2>
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
               <SelectTrigger className="w-[110px] h-8 text-xs bg-background">
                 <SelectValue placeholder="Status" />
@@ -153,8 +225,16 @@ export default function ChatPage() {
                     <p className="text-xs text-muted-foreground truncate mb-2">
                       {conv.lastMessage || "No messages yet"}
                     </p>
-                    <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1">
-                      <StatusBadge status={conv.status} />
+                    <div className="flex gap-1 items-center overflow-x-auto no-scrollbar pb-1">
+                      <ChannelGlyph channel={(conv as unknown as { channel?: string }).channel} />
+                      {(() => {
+                        const s = getChatStatus(conv as unknown as ConvWithChannel, slaMinutes);
+                        return (
+                          <Badge variant="outline" className={`text-[9px] px-1.5 h-4 border ${s.tone}`}>
+                            {s.label}
+                          </Badge>
+                        );
+                      })()}
                       {conv.tags?.slice(0, 2).map((tag, idx) => (
                         <Badge key={idx} variant="outline" className="text-[9px] px-1 h-4 bg-background">
                           {tag}

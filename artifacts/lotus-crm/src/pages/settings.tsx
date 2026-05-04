@@ -16,7 +16,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format, parseISO } from "date-fns";
-import { Trash2, Plus, Shield, Users, Tag as TagIcon, MessageSquare, Sliders } from "lucide-react";
+import { Trash2, Plus, Shield, Users, Tag as TagIcon, MessageSquare, Sliders, Palette, Upload, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
@@ -56,6 +56,7 @@ export default function SettingsPage() {
           <TabsTrigger value="tags" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><TagIcon className="h-4 w-4 mr-2" /> Conversation Tags</TabsTrigger>
           <TabsTrigger value="replies" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><MessageSquare className="h-4 w-4 mr-2" /> Quick Replies</TabsTrigger>
           <TabsTrigger value="distribution" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><Sliders className="h-4 w-4 mr-2" /> Chat Distribution</TabsTrigger>
+          <TabsTrigger value="branding" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><Palette className="h-4 w-4 mr-2" /> Branding</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-6 m-0">
@@ -72,6 +73,10 @@ export default function SettingsPage() {
 
         <TabsContent value="distribution" className="space-y-6 m-0">
           <ChatDistributionSettings />
+        </TabsContent>
+
+        <TabsContent value="branding" className="space-y-6 m-0">
+          <BrandingSettings />
         </TabsContent>
       </Tabs>
     </div>
@@ -639,6 +644,215 @@ function ChatDistributionSettings() {
             resolves a chat or becomes available, the next queued chat is assigned to them
             automatically.
           </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// BRANDING — company name, logo, and SLA threshold
+// -----------------------------------------------------------------------------
+function BrandingSettings() {
+  const { data: settings, isLoading } = useGetSettings();
+  const updateMut = useUpdateSettings();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const [companyName, setCompanyName] = React.useState("");
+  const [logoUrl, setLogoUrl] = React.useState<string | null>(null);
+  const [slaMinutes, setSlaMinutes] = React.useState<number>(15);
+  const [dirty, setDirty] = React.useState(false);
+  const fileRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (settings) {
+      const s = settings as unknown as {
+        companyName?: string;
+        logoUrl?: string | null;
+        slaMinutes?: number;
+      };
+      setCompanyName(s.companyName ?? "Lotus Pharmacies");
+      setLogoUrl(s.logoUrl ?? null);
+      setSlaMinutes(s.slaMinutes ?? 15);
+      setDirty(false);
+    }
+  }, [settings]);
+
+  const handleFile = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Please choose an image file", variant: "destructive" });
+      return;
+    }
+    if (file.size > 500 * 1024) {
+      toast({
+        title: "Image too large",
+        description: "Maximum size is 500KB. Try a smaller PNG/SVG.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setLogoUrl(String(reader.result));
+      setDirty(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const save = () => {
+    updateMut.mutate(
+      // Cast: companyName/logoUrl/slaMinutes are not in the generated openapi
+      // types yet, but the API accepts them.
+      { data: { companyName, logoUrl, slaMinutes } as never },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: ["/api/branding"] });
+          toast({ title: "Branding saved" });
+          setDirty(false);
+        },
+        onError: () => toast({ title: "Could not save branding", variant: "destructive" }),
+      },
+    );
+  };
+
+  return (
+    <div className="grid md:grid-cols-3 gap-6">
+      <Card className="md:col-span-2 shadow-sm">
+        <CardHeader>
+          <CardTitle>Company Branding</CardTitle>
+          <CardDescription>
+            Customize how your workspace looks for both the sidebar and the login screen.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {isLoading ? (
+            <Skeleton className="h-40 w-full" />
+          ) : (
+            <>
+              {/* Logo */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Logo</Label>
+                <div className="flex items-center gap-4">
+                  <div className="h-20 w-20 rounded-xl border border-border bg-muted/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    {logoUrl ? (
+                      <img src={logoUrl} alt="Logo preview" className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No logo</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleFile(f);
+                        e.target.value = "";
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileRef.current?.click()}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {logoUrl ? "Replace logo" : "Upload logo"}
+                    </Button>
+                    {logoUrl && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => {
+                          setLogoUrl(null);
+                          setDirty(true);
+                        }}
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Remove
+                      </Button>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      PNG, JPG, or SVG. Max 500KB. Square images look best.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Company name */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Company name</Label>
+                <Input
+                  value={companyName}
+                  onChange={(e) => {
+                    setCompanyName(e.target.value);
+                    setDirty(true);
+                  }}
+                  placeholder="Lotus Pharmacies"
+                  maxLength={80}
+                  className="h-10"
+                  data-testid="input-company-name"
+                />
+              </div>
+
+              {/* SLA */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  SLA threshold (minutes)
+                </Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={1440}
+                  value={slaMinutes}
+                  onChange={(e) => {
+                    setSlaMinutes(Number(e.target.value) || 1);
+                    setDirty(true);
+                  }}
+                  className="h-10 w-32"
+                  data-testid="input-sla-minutes"
+                />
+                <p className="text-xs text-muted-foreground">
+                  When a customer waits longer than this, the chat is flagged
+                  <span className="text-rose-600 font-medium"> Late</span> in the inbox and
+                  AI Insights.
+                </p>
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={save} disabled={!dirty || updateMut.isPending} data-testid="button-save-branding">
+                  {updateMut.isPending ? "Saving…" : "Save changes"}
+                </Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm h-fit">
+        <CardHeader>
+          <CardTitle className="text-base">Live preview</CardTitle>
+          <CardDescription>How it appears in the sidebar</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-lg border border-border bg-sidebar p-4 flex items-center gap-2.5">
+            {logoUrl ? (
+              <img src={logoUrl} alt="" className="h-8 w-8 rounded-md object-cover ring-1 ring-border/50" />
+            ) : (
+              <div className="bg-primary rounded-md p-1.5">
+                <MessageSquare className="h-5 w-5 text-primary-foreground" />
+              </div>
+            )}
+            <span className="font-bold text-lg tracking-tight truncate">
+              {companyName || "Lotus Pharmacies"}
+            </span>
+          </div>
         </CardContent>
       </Card>
     </div>

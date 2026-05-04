@@ -2,7 +2,7 @@ import { pgTable, integer, text, boolean, timestamp } from "drizzle-orm/pg-core"
 
 /**
  * Single-row configuration table (id always = 1).
- * Holds chat-distribution settings.
+ * Holds chat-distribution + branding settings.
  */
 export const settingsTable = pgTable("settings", {
   id: integer("id").primaryKey().default(1),
@@ -13,6 +13,11 @@ export const settingsTable = pgTable("settings", {
   })
     .notNull()
     .default("least_busy"),
+  // Branding — admin-configurable
+  companyName: text("company_name").notNull().default("Lotus Pharmacies"),
+  logoUrl: text("logo_url"),
+  // SLA threshold (in minutes) used for chat-monitoring "Late" status
+  slaMinutes: integer("sla_minutes").notNull().default(15),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 

@@ -9,6 +9,7 @@ import tagsRouter from "./tags";
 import quickRepliesRouter from "./quick-replies";
 import analyticsRouter from "./analytics";
 import settingsRouter from "./settings";
+import insightsRouter from "./insights";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(tagsRouter);
 router.use(quickRepliesRouter);
 router.use(analyticsRouter);
 router.use(settingsRouter);
+router.use(insightsRouter);
 
 export default router;

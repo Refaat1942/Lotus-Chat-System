@@ -81,6 +81,7 @@ const SNIPPETS = [
   "I'm following up on my last order.",
 ];
 const STATUSES = ["open", "open", "open", "pending", "resolved"] as const;
+const CHANNELS = ["whatsapp", "whatsapp", "whatsapp", "messenger", "messenger", "instagram", "sms"] as const;
 const BRANCHES = ["Downtown", "Westside", "North"];
 
 export async function bootstrapSeed(): Promise<void> {
@@ -208,15 +209,24 @@ export async function bootstrapSeed(): Promise<void> {
         Date.now() - (minutesAgo + 5 + (i % 10)) * 60 * 1000,
       );
 
+      // Vary last-sender so the chat-monitoring view shows a realistic mix
+      // of "Waiting for agent" (customer was last) vs "Replied" (agent was
+      // last). Roughly 1/3 of open chats are awaiting agent reply.
+      const lastSenderType: "agent" | "customer" =
+        status === "open" && i % 3 === 0 ? "customer" : "agent";
+      const channel = CHANNELS[i % CHANNELS.length];
+
       const [conv] = await db
         .insert(conversationsTable)
         .values({
           customerId,
           assignedAgentId: agentId,
           status,
+          channel,
           tags: cTags,
           lastMessage: lastMsg,
           lastMessageAt: lastAt,
+          lastSenderType,
           unreadCount: i % 3,
           createdAt: customerAt,
           resolvedAt: status === "resolved" ? lastAt : null,

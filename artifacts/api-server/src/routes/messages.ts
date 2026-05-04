@@ -58,6 +58,7 @@ router.post("/conversations/:id/messages", requireAuth, async (req: AuthRequest,
   await db.update(conversationsTable).set({
     lastMessage: body,
     lastMessageAt: new Date(),
+    lastSenderType: senderType,
   }).where(eq(conversationsTable.id, convId));
 
   const io: IOServer = (req as AuthRequest & { app: { get: (k: string) => IOServer } }).app.get("io");
