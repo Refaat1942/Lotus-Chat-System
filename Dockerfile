@@ -21,6 +21,8 @@ COPY lib/db/package.json                 ./lib/db/
 COPY lib/api-spec/package.json           ./lib/api-spec/
 COPY lib/api-zod/package.json            ./lib/api-zod/
 COPY lib/api-client-react/package.json   ./lib/api-client-react/
+COPY lib/integrations-openai-ai-server/package.json ./lib/integrations-openai-ai-server/
+COPY lib/integrations-openai-ai-react/package.json  ./lib/integrations-openai-ai-react/
 COPY scripts/package.json                ./scripts/
 
 RUN pnpm install --no-frozen-lockfile
