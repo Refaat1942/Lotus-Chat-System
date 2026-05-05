@@ -403,28 +403,3 @@ export function useUpdateMyAvailability() {
   });
 }
 
-// ---------------------------------------------------------------------------
-// AI customer brief (server-side OpenAI call)
-// ---------------------------------------------------------------------------
-export interface CustomerAiBrief {
-  brief: string;
-  generatedAt: string;
-}
-
-export function useCustomerAiBrief(customerId: number | null) {
-  const qc = useQueryClient();
-  const mut = useMutation({
-    mutationFn: (id: number) =>
-      customFetch<CustomerAiBrief>(`/api/customers/${id}/ai-brief`, { method: "POST" }),
-    onSuccess: (_data, id) => {
-      qc.setQueryData(["/api/customers", id, "ai-brief"], _data);
-    },
-  });
-  const cached = useQuery({
-    queryKey: ["/api/customers", customerId, "ai-brief"],
-    queryFn: async () => null as CustomerAiBrief | null,
-    enabled: false,
-    initialData: null as CustomerAiBrief | null,
-  });
-  return { ...mut, data: cached.data };
-}

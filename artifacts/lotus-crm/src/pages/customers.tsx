@@ -17,7 +17,7 @@ import {
   MessageSquare, Clock, ChevronRight, ArrowLeft, Ban, ShieldCheck,
   Sparkles, RefreshCw,
 } from "lucide-react";
-import { useBlockCustomer, useUnblockCustomer, useCustomerAiBrief } from "@/lib/api-extra";
+import { useBlockCustomer, useUnblockCustomer } from "@/lib/api-extra";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -383,8 +383,6 @@ function CustomerDetailView({
             </CardContent>
           </Card>
 
-          <CustomerAiBriefCard customerId={customer.id} />
-
           {customer.prescriptionNotes && (
             <Card className="shadow-sm border-blue-200 bg-blue-50/30 dark:bg-blue-900/10 dark:border-blue-900">
               <CardHeader className="pb-2">
@@ -720,55 +718,3 @@ function CreateCustomerDialog({
   );
 }
 
-// ---------------------------------------------------------------------------
-// AI Customer Brief — generates a multi-discipline summary on demand using
-// the patient profile, clinical notes, and recent conversation snippets.
-// ---------------------------------------------------------------------------
-function CustomerAiBriefCard({ customerId }: { customerId: number }) {
-  const { data, mutate, isPending, error } = useCustomerAiBrief(customerId);
-
-  return (
-    <Card className="shadow-sm border-purple-200 bg-purple-50/30 dark:bg-purple-900/10 dark:border-purple-900">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-sm flex items-center gap-1.5 text-purple-700 dark:text-purple-400">
-            <Sparkles className="h-3.5 w-3.5" />
-            AI Patient Brief
-          </CardTitle>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1.5 text-xs text-purple-700 hover:bg-purple-100 dark:text-purple-300 dark:hover:bg-purple-900/30"
-            onClick={() => mutate(customerId)}
-            disabled={isPending}
-            data-testid="btn-ai-brief"
-          >
-            <RefreshCw className={`h-3 w-3 ${isPending ? "animate-spin" : ""}`} />
-            {data ? "Refresh" : "Generate"}
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {error ? (
-          <p className="text-xs text-destructive">
-            {error instanceof Error ? error.message : "AI request failed"}
-          </p>
-        ) : isPending && !data ? (
-          <div className="space-y-1.5">
-            <Skeleton className="h-3 w-full" />
-            <Skeleton className="h-3 w-5/6" />
-            <Skeleton className="h-3 w-4/6" />
-          </div>
-        ) : data?.brief ? (
-          <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">
-            {data.brief}
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground italic">
-            Click <span className="font-medium">Generate</span> to produce a profile, clinical, communication, next-action, and risk summary.
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}

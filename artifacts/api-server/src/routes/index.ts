@@ -16,7 +16,6 @@ import chatReasonCategoriesRouter from "./chat-reason-categories";
 import chatReasonsRouter from "./chat-reasons";
 import notReadyReasonsRouter from "./not-ready-reasons";
 import meRouter from "./me";
-import customerAiRouter from "./customer-ai";
 
 const router: IRouter = Router();
 
@@ -37,6 +36,5 @@ router.use(chatReasonCategoriesRouter);
 router.use(chatReasonsRouter);
 router.use(notReadyReasonsRouter);
 router.use(meRouter);
-router.use(customerAiRouter);
 
 export default router;
