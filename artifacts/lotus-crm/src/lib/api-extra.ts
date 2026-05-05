@@ -224,3 +224,207 @@ export function usePermissionsFor(role: RoleName | undefined) {
     canManageSettings: row?.canManageSettings ?? (role === "admin"),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Chat Reason Categories (Awfar-inspired) — admin CRUD
+// ---------------------------------------------------------------------------
+export interface ChatReasonCategory {
+  id: number;
+  titleEn: string;
+  titleAr: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export function useChatReasonCategories() {
+  return useQuery({
+    queryKey: ["/api/chat-reason-categories"],
+    queryFn: () => customFetch<ChatReasonCategory[]>("/api/chat-reason-categories"),
+  });
+}
+
+export function useCreateChatReasonCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { titleEn: string; titleAr: string }) =>
+      customFetch<ChatReasonCategory>("/api/chat-reason-categories", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/chat-reason-categories"] }),
+  });
+}
+
+export function useUpdateChatReasonCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number; titleEn?: string; titleAr?: string }) =>
+      customFetch<ChatReasonCategory>(`/api/chat-reason-categories/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/chat-reason-categories"] }),
+  });
+}
+
+export function useDeleteChatReasonCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      customFetch<void>(`/api/chat-reason-categories/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/chat-reason-categories"] });
+      qc.invalidateQueries({ queryKey: ["/api/chat-reasons"] });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Chat Reasons — admin CRUD; agents read for the conversation picker
+// ---------------------------------------------------------------------------
+export interface ChatReason {
+  id: number;
+  nameEn: string;
+  nameAr: string;
+  color: string;
+  categoryId: number | null;
+  isActive: boolean;
+  createdAt: string;
+  categoryTitleEn?: string | null;
+  categoryTitleAr?: string | null;
+}
+
+export function useChatReasons() {
+  return useQuery({
+    queryKey: ["/api/chat-reasons"],
+    queryFn: () => customFetch<ChatReason[]>("/api/chat-reasons"),
+  });
+}
+
+export function useCreateChatReason() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { nameEn: string; nameAr: string; color: string; categoryId: number | null }) =>
+      customFetch<ChatReason>("/api/chat-reasons", { method: "POST", body: JSON.stringify(data) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/chat-reasons"] }),
+  });
+}
+
+export function useUpdateChatReason() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number; nameEn?: string; nameAr?: string; color?: string; categoryId?: number | null }) =>
+      customFetch<ChatReason>(`/api/chat-reasons/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/chat-reasons"] }),
+  });
+}
+
+export function useDeleteChatReason() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      customFetch<void>(`/api/chat-reasons/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/chat-reasons"] }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Not-ready reasons — admin CRUD; agents pick when going off-shift
+// ---------------------------------------------------------------------------
+export interface NotReadyReason {
+  id: number;
+  key: string;
+  value: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export function useNotReadyReasons() {
+  return useQuery({
+    queryKey: ["/api/not-ready-reasons"],
+    queryFn: () => customFetch<NotReadyReason[]>("/api/not-ready-reasons"),
+  });
+}
+
+export function useCreateNotReadyReason() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { key: string; value: string }) =>
+      customFetch<NotReadyReason>("/api/not-ready-reasons", { method: "POST", body: JSON.stringify(data) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/not-ready-reasons"] }),
+  });
+}
+
+export function useUpdateNotReadyReason() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number; key?: string; value?: string }) =>
+      customFetch<NotReadyReason>(`/api/not-ready-reasons/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/not-ready-reasons"] }),
+  });
+}
+
+export function useDeleteNotReadyReason() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      customFetch<void>(`/api/not-ready-reasons/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/not-ready-reasons"] }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Agent availability (ready / not-ready with reason)
+// ---------------------------------------------------------------------------
+export interface MyAvailability {
+  isReady: boolean;
+  notReadyReasonId: number | null;
+  notReadySince: string | null;
+  notReadyReason: string | null;
+}
+
+export function useMyAvailability() {
+  return useQuery({
+    queryKey: ["/api/me/availability"],
+    queryFn: () => customFetch<MyAvailability>("/api/me/availability"),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useUpdateMyAvailability() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { notReadyReasonId: number | null }) =>
+      customFetch<{ ok: boolean; isReady: boolean }>("/api/me/availability", {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/me/availability"] }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// AI customer brief (server-side OpenAI call)
+// ---------------------------------------------------------------------------
+export interface CustomerAiBrief {
+  brief: string;
+  generatedAt: string;
+}
+
+export function useCustomerAiBrief(customerId: number | null) {
+  const qc = useQueryClient();
+  const mut = useMutation({
+    mutationFn: (id: number) =>
+      customFetch<CustomerAiBrief>(`/api/customers/${id}/ai-brief`, { method: "POST" }),
+    onSuccess: (_data, id) => {
+      qc.setQueryData(["/api/customers", id, "ai-brief"], _data);
+    },
+  });
+  const cached = useQuery({
+    queryKey: ["/api/customers", customerId, "ai-brief"],
+    queryFn: async () => null as CustomerAiBrief | null,
+    enabled: false,
+    initialData: null as CustomerAiBrief | null,
+  });
+  return { ...mut, data: cached.data };
+}

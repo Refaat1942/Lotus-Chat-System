@@ -1,18 +1,43 @@
 import React from "react";
-import { Moon, Sun, Leaf } from "lucide-react";
+import { Moon, Sun, Leaf, Circle } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/auth";
-import { useBranding } from "@/lib/api-extra";
+import {
+  useBranding,
+  useMyAvailability,
+  useUpdateMyAvailability,
+  useNotReadyReasons,
+} from "@/lib/api-extra";
 import { NotificationsBell } from "@/components/notifications-bell";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function TopBar() {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const { data: branding } = useBranding();
+  const { data: availability } = useMyAvailability();
+  const { data: notReadyReasons } = useNotReadyReasons();
+  const updateAvailability = useUpdateMyAvailability();
 
   const companyName = branding?.companyName ?? "Lotus Pharmacies";
+
+  const isReady = availability?.isReady ?? true;
+  const currentReason = notReadyReasons?.find((r) => r.id === availability?.notReadyReasonId);
+  const statusColor = isReady ? "text-emerald-500" : "text-amber-500";
+  const statusLabel = isReady
+    ? "Ready"
+    : currentReason
+      ? `Not Ready · ${currentReason.value}`
+      : "Not Ready";
 
   return (
     <header
@@ -37,8 +62,50 @@ export function TopBar() {
         </span>
       </div>
 
-      {/* Right — notifications, theme toggle, user */}
+      {/* Right — availability, notifications, theme toggle, user */}
       <div className="flex items-center gap-1.5">
+        {user && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-2 px-3 text-xs font-medium"
+                data-testid="btn-availability"
+              >
+                <Circle className={`h-2 w-2 fill-current ${statusColor}`} />
+                <span className="hidden md:inline">{statusLabel}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Set availability</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => updateAvailability.mutate({ notReadyReasonId: null })}
+                data-testid="availability-ready"
+              >
+                <Circle className="h-2 w-2 fill-current text-emerald-500 mr-2" />
+                Ready
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground">Not Ready — pick reason</DropdownMenuLabel>
+              {notReadyReasons?.length ? (
+                notReadyReasons.map((r) => (
+                  <DropdownMenuItem
+                    key={r.id}
+                    onClick={() => updateAvailability.mutate({ notReadyReasonId: r.id })}
+                    data-testid={`availability-${r.key.toLowerCase()}`}
+                  >
+                    <Circle className="h-2 w-2 fill-current text-amber-500 mr-2" />
+                    {r.value}
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">No reasons configured</div>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
         <NotificationsBell />
 
         <Button

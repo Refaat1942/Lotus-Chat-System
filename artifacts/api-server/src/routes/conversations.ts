@@ -16,6 +16,7 @@ async function getConversationWithRelations(id: number) {
     status: conversationsTable.status,
     channel: conversationsTable.channel,
     tags: conversationsTable.tags,
+    chatReasonId: conversationsTable.chatReasonId,
     lastMessage: conversationsTable.lastMessage,
     lastMessageAt: conversationsTable.lastMessageAt,
     lastSenderType: conversationsTable.lastSenderType,
@@ -58,6 +59,7 @@ router.get("/conversations", requireAuth, async (req: AuthRequest, res) => {
     status: conversationsTable.status,
     channel: conversationsTable.channel,
     tags: conversationsTable.tags,
+    chatReasonId: conversationsTable.chatReasonId,
     lastMessage: conversationsTable.lastMessage,
     lastMessageAt: conversationsTable.lastMessageAt,
     lastSenderType: conversationsTable.lastSenderType,
@@ -166,10 +168,22 @@ router.patch("/conversations/:id", requireAuth, async (req: AuthRequest, res) =>
   if (req.user?.role === "agent" && existing.assignedAgentId !== req.user.id) {
     res.status(403).json({ error: "Forbidden" }); return;
   }
-  const { tags, status, assignedAgentId } = req.body;
+  const { tags, status, assignedAgentId, chatReasonId } = req.body;
   const updates: Record<string, unknown> = {};
   if (tags !== undefined) updates.tags = tags;
   if (status !== undefined) updates.status = status;
+  if (chatReasonId !== undefined) {
+    if (chatReasonId === null) {
+      updates.chatReasonId = null;
+    } else {
+      const n = Number(chatReasonId);
+      if (!Number.isInteger(n) || n <= 0) {
+        res.status(400).json({ error: "chatReasonId must be a positive integer or null" });
+        return;
+      }
+      updates.chatReasonId = n;
+    }
+  }
   // Only admins may reassign conversations to another agent.
   if (assignedAgentId !== undefined) {
     if (req.user?.role !== "admin") {

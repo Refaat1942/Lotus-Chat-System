@@ -27,6 +27,7 @@ export const conversationsTable = pgTable("conversations", {
     enum: ["agent", "customer", "system"],
   }),
   unreadCount: integer("unread_count").notNull().default(0),
+  chatReasonId: integer("chat_reason_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   resolvedAt: timestamp("resolved_at"),
   queuedAt: timestamp("queued_at"),

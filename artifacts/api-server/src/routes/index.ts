@@ -12,6 +12,11 @@ import settingsRouter from "./settings";
 import insightsRouter from "./insights";
 import campaignsRouter from "./campaigns";
 import rolePermissionsRouter from "./role-permissions";
+import chatReasonCategoriesRouter from "./chat-reason-categories";
+import chatReasonsRouter from "./chat-reasons";
+import notReadyReasonsRouter from "./not-ready-reasons";
+import meRouter from "./me";
+import customerAiRouter from "./customer-ai";
 
 const router: IRouter = Router();
 
@@ -28,5 +33,10 @@ router.use(settingsRouter);
 router.use(insightsRouter);
 router.use(campaignsRouter);
 router.use(rolePermissionsRouter);
+router.use(chatReasonCategoriesRouter);
+router.use(chatReasonsRouter);
+router.use(notReadyReasonsRouter);
+router.use(meRouter);
+router.use(customerAiRouter);
 
 export default router;

@@ -60,7 +60,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FaWhatsapp, FaFacebookMessenger, FaInstagram, FaSms } from "react-icons/fa";
 import { Globe } from "lucide-react";
 import { useSearch } from "wouter";
-import { useInsights } from "@/lib/api-extra";
+import { useInsights, useChatReasons } from "@/lib/api-extra";
 
 type ConvWithChannel = {
   id: number;
@@ -382,6 +382,10 @@ function ChatCenter({ conversationId, currentUserId, currentUserName, message, s
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <ChatReasonPicker
+            conversationId={conversationId}
+            currentReasonId={(conv as { chatReasonId?: number | null } | undefined)?.chatReasonId ?? null}
+          />
           {conv?.status !== "completed" && (
             <Button size="sm" variant="outline" onClick={handleResolve} disabled={resolveMut.isPending} data-testid="btn-resolve">
               <CheckCircle2 className="h-4 w-4 mr-2 text-emerald-500" />
@@ -867,4 +871,97 @@ function StatusBadge({ status }: { status: string }) {
     default:
       return null;
   }
+}
+// ---------------------------------------------------------------------------
+// Chat Reason Picker — shown in conversation header. Lets the agent tag the
+// conversation with a categorized reason (e.g. Refill, Complaint).
+// ---------------------------------------------------------------------------
+function ChatReasonPicker({
+  conversationId,
+  currentReasonId,
+}: {
+  conversationId: number;
+  currentReasonId: number | null;
+}) {
+  const { data: reasons } = useChatReasons();
+  const patchMut = usePatchConversation();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  if (!conversationId) return null;
+  const current = reasons?.find((r) => r.id === currentReasonId) ?? null;
+
+  const setReason = (id: number | null) => {
+    patchMut.mutate(
+      { id: conversationId, data: { chatReasonId: id } as never },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetConversationQueryKey(conversationId) });
+          queryClient.invalidateQueries({ queryKey: getListConversationsQueryKey() });
+          toast({ title: id ? "Chat reason updated" : "Chat reason cleared" });
+        },
+        onError: (err) => {
+          toast({
+            title: "Failed to update reason",
+            description: err instanceof Error ? err.message : String(err),
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-2 text-xs font-medium"
+          data-testid="btn-chat-reason"
+        >
+          {current ? (
+            <>
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: current.color }} />
+              {current.nameEn}
+            </>
+          ) : (
+            <>
+              <TagIcon className="h-3.5 w-3.5" />
+              Set reason
+            </>
+          )}
+          <ChevronDown className="h-3 w-3 opacity-60" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56 max-h-80 overflow-y-auto">
+        {currentReasonId !== null && (
+          <>
+            <DropdownMenuItem onClick={() => setReason(null)} data-testid="reason-clear">
+              <X className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+              Clear reason
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        {reasons?.length ? (
+          reasons.map((r) => (
+            <DropdownMenuItem
+              key={r.id}
+              onClick={() => setReason(r.id)}
+              data-testid={`reason-${r.id}`}
+            >
+              <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: r.color }} />
+              <span className="flex-1">{r.nameEn}</span>
+              {r.categoryTitleEn && (
+                <span className="text-[10px] text-muted-foreground ml-2">{r.categoryTitleEn}</span>
+              )}
+            </DropdownMenuItem>
+          ))
+        ) : (
+          <div className="px-2 py-2 text-xs text-muted-foreground">No reasons configured</div>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }

@@ -16,8 +16,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format, parseISO } from "date-fns";
-import { Trash2, Plus, Shield, Users, Tag as TagIcon, MessageSquare, Sliders, Palette, Upload, X, Lock } from "lucide-react";
-import { useRolePermissions, useUpdateRolePermissions, type RolePermissions as RolePerms, type RoleName } from "@/lib/api-extra";
+import { Trash2, Plus, Shield, Users, Tag as TagIcon, MessageSquare, Sliders, Palette, Upload, X, Lock, MessageCircle, FolderOpen, Coffee } from "lucide-react";
+import {
+  useRolePermissions, useUpdateRolePermissions, type RolePermissions as RolePerms, type RoleName,
+  useChatReasons, useCreateChatReason, useUpdateChatReason, useDeleteChatReason,
+  useChatReasonCategories, useCreateChatReasonCategory, useUpdateChatReasonCategory, useDeleteChatReasonCategory,
+  useNotReadyReasons, useCreateNotReadyReason, useUpdateNotReadyReason, useDeleteNotReadyReason,
+} from "@/lib/api-extra";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
@@ -59,6 +64,9 @@ export default function SettingsPage() {
           <TabsTrigger value="distribution" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><Sliders className="h-4 w-4 mr-2" /> Chat Distribution</TabsTrigger>
           <TabsTrigger value="branding" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><Palette className="h-4 w-4 mr-2" /> Branding</TabsTrigger>
           <TabsTrigger value="permissions" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><Lock className="h-4 w-4 mr-2" /> Permissions</TabsTrigger>
+          <TabsTrigger value="chat-reason-categories" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><FolderOpen className="h-4 w-4 mr-2" /> Reason Categories</TabsTrigger>
+          <TabsTrigger value="chat-reasons" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><MessageCircle className="h-4 w-4 mr-2" /> Chat Reasons</TabsTrigger>
+          <TabsTrigger value="not-ready" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><Coffee className="h-4 w-4 mr-2" /> Not Ready</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-6 m-0">
@@ -83,6 +91,18 @@ export default function SettingsPage() {
 
         <TabsContent value="permissions" className="space-y-6 m-0">
           <PermissionsSettings />
+        </TabsContent>
+
+        <TabsContent value="chat-reason-categories" className="space-y-6 m-0">
+          <ChatReasonCategoriesSettings />
+        </TabsContent>
+
+        <TabsContent value="chat-reasons" className="space-y-6 m-0">
+          <ChatReasonsSettings />
+        </TabsContent>
+
+        <TabsContent value="not-ready" className="space-y-6 m-0">
+          <NotReadyReasonsSettings />
         </TabsContent>
       </Tabs>
     </div>
@@ -955,6 +975,336 @@ function BrandingSettings() {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+// -----------------------------------------------------------------------------
+// CHAT REASON CATEGORIES (Awfar-inspired) — admin CRUD with EN/AR titles
+// -----------------------------------------------------------------------------
+function ChatReasonCategoriesSettings() {
+  const { data: cats, isLoading } = useChatReasonCategories();
+  const createMut = useCreateChatReasonCategory();
+  const deleteMut = useDeleteChatReasonCategory();
+  const updateMut = useUpdateChatReasonCategory();
+  const { toast } = useToast();
+  const [titleEn, setTitleEn] = React.useState("");
+  const [titleAr, setTitleAr] = React.useState("");
+  const [editing, setEditing] = React.useState<{ id: number; titleEn: string; titleAr: string } | null>(null);
+
+  const handleAdd = () => {
+    if (!titleEn.trim() || !titleAr.trim()) return;
+    createMut.mutate(
+      { titleEn: titleEn.trim(), titleAr: titleAr.trim() },
+      { onSuccess: () => { toast({ title: "Category created" }); setTitleEn(""); setTitleAr(""); } },
+    );
+  };
+
+  return (
+    <div className="grid md:grid-cols-3 gap-6">
+      <Card className="md:col-span-2 shadow-sm">
+        <CardHeader>
+          <CardTitle>Chat Reason Categories</CardTitle>
+          <CardDescription>Group chat reasons (e.g. Sales, Support) — bilingual.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-32 w-full" />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>English</TableHead>
+                  <TableHead>Arabic</TableHead>
+                  <TableHead className="w-32 text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {cats?.map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-medium">{c.titleEn}</TableCell>
+                    <TableCell dir="rtl" className="font-medium">{c.titleAr}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditing({ id: c.id, titleEn: c.titleEn, titleAr: c.titleAr })}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => deleteMut.mutate(c.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {cats?.length === 0 && (
+                  <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">No categories yet</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+      <Card className="shadow-sm h-fit">
+        <CardHeader><CardTitle className="text-base">Add Category</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div>
+            <Label className="text-xs">English Title</Label>
+            <Input value={titleEn} onChange={(e) => setTitleEn(e.target.value)} placeholder="e.g. Sales" className="h-9 text-sm" />
+          </div>
+          <div>
+            <Label className="text-xs">Arabic Title</Label>
+            <Input value={titleAr} onChange={(e) => setTitleAr(e.target.value)} placeholder="مثال: مبيعات" dir="rtl" className="h-9 text-sm" />
+          </div>
+          <Button className="w-full" size="sm" onClick={handleAdd} disabled={createMut.isPending}>
+            <Plus className="h-4 w-4 mr-2" /> Add Category
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Category</DialogTitle></DialogHeader>
+          {editing && (
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs">English Title</Label>
+                <Input value={editing.titleEn} onChange={(e) => setEditing({ ...editing, titleEn: e.target.value })} className="h-9 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs">Arabic Title</Label>
+                <Input value={editing.titleAr} onChange={(e) => setEditing({ ...editing, titleAr: e.target.value })} dir="rtl" className="h-9 text-sm" />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={() => editing && updateMut.mutate(editing, { onSuccess: () => { setEditing(null); toast({ title: "Updated" }); } })}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// CHAT REASONS — admin CRUD with EN/AR names, color, optional category
+// -----------------------------------------------------------------------------
+function ChatReasonsSettings() {
+  const { data: reasons, isLoading } = useChatReasons();
+  const { data: cats } = useChatReasonCategories();
+  const createMut = useCreateChatReason();
+  const deleteMut = useDeleteChatReason();
+  const updateMut = useUpdateChatReason();
+  const { toast } = useToast();
+  const [form, setForm] = React.useState({ nameEn: "", nameAr: "", color: "#2E7D32", categoryId: "" });
+  const [editing, setEditing] = React.useState<null | { id: number; nameEn: string; nameAr: string; color: string; categoryId: string }>(null);
+
+  const handleAdd = () => {
+    if (!form.nameEn.trim() || !form.nameAr.trim()) return;
+    createMut.mutate(
+      { nameEn: form.nameEn.trim(), nameAr: form.nameAr.trim(), color: form.color, categoryId: form.categoryId ? Number(form.categoryId) : null },
+      { onSuccess: () => { toast({ title: "Chat reason created" }); setForm({ nameEn: "", nameAr: "", color: "#2E7D32", categoryId: "" }); } },
+    );
+  };
+
+  return (
+    <div className="grid md:grid-cols-3 gap-6">
+      <Card className="md:col-span-2 shadow-sm">
+        <CardHeader>
+          <CardTitle>Chat Reasons</CardTitle>
+          <CardDescription>Tag every conversation with the reason (e.g. Refill, Complaint). Bilingual + colored.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-32 w-full" />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Reason</TableHead>
+                  <TableHead>Arabic</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead className="w-32 text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {reasons?.map((r) => {
+                  const cat = cats?.find((c) => c.id === r.categoryId);
+                  return (
+                    <TableRow key={r.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: r.color }} />
+                          <span className="font-medium">{r.nameEn}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell dir="rtl" className="font-medium">{r.nameAr}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{cat?.titleEn ?? "—"}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditing({ id: r.id, nameEn: r.nameEn, nameAr: r.nameAr, color: r.color, categoryId: r.categoryId ? String(r.categoryId) : "" })}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => deleteMut.mutate(r.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {reasons?.length === 0 && (
+                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">No chat reasons yet</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+      <Card className="shadow-sm h-fit">
+        <CardHeader><CardTitle className="text-base">Add Chat Reason</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div>
+            <Label className="text-xs">English Name</Label>
+            <Input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} placeholder="e.g. Refill" className="h-9 text-sm" />
+          </div>
+          <div>
+            <Label className="text-xs">Arabic Name</Label>
+            <Input value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} dir="rtl" className="h-9 text-sm" placeholder="مثال: إعادة صرف" />
+          </div>
+          <div>
+            <Label className="text-xs">Color</Label>
+            <Input type="color" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} className="h-9 p-1" />
+          </div>
+          <div>
+            <Label className="text-xs">Category</Label>
+            <Select value={form.categoryId || "none"} onValueChange={(v) => setForm({ ...form, categoryId: v === "none" ? "" : v })}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No category</SelectItem>
+                {cats?.map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.titleEn}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button className="w-full" size="sm" onClick={handleAdd} disabled={createMut.isPending}>
+            <Plus className="h-4 w-4 mr-2" /> Add Reason
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Chat Reason</DialogTitle></DialogHeader>
+          {editing && (
+            <div className="space-y-3">
+              <div><Label className="text-xs">English Name</Label><Input value={editing.nameEn} onChange={(e) => setEditing({ ...editing, nameEn: e.target.value })} className="h-9 text-sm" /></div>
+              <div><Label className="text-xs">Arabic Name</Label><Input value={editing.nameAr} onChange={(e) => setEditing({ ...editing, nameAr: e.target.value })} dir="rtl" className="h-9 text-sm" /></div>
+              <div><Label className="text-xs">Color</Label><Input type="color" value={editing.color} onChange={(e) => setEditing({ ...editing, color: e.target.value })} className="h-9 p-1" /></div>
+              <div>
+                <Label className="text-xs">Category</Label>
+                <Select value={editing.categoryId || "none"} onValueChange={(v) => setEditing({ ...editing, categoryId: v === "none" ? "" : v })}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No category</SelectItem>
+                    {cats?.map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.titleEn}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={() => editing && updateMut.mutate({ id: editing.id, nameEn: editing.nameEn, nameAr: editing.nameAr, color: editing.color, categoryId: editing.categoryId ? Number(editing.categoryId) : null }, { onSuccess: () => { setEditing(null); toast({ title: "Updated" }); } })}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// NOT-READY REASONS — admin CRUD; agents pick when going off-shift
+// -----------------------------------------------------------------------------
+function NotReadyReasonsSettings() {
+  const { data: reasons, isLoading } = useNotReadyReasons();
+  const createMut = useCreateNotReadyReason();
+  const deleteMut = useDeleteNotReadyReason();
+  const updateMut = useUpdateNotReadyReason();
+  const { toast } = useToast();
+  const [form, setForm] = React.useState({ key: "", value: "" });
+  const [editing, setEditing] = React.useState<null | { id: number; key: string; value: string }>(null);
+
+  const handleAdd = () => {
+    if (!form.key.trim() || !form.value.trim()) return;
+    createMut.mutate(
+      { key: form.key.trim().toUpperCase(), value: form.value.trim() },
+      { onSuccess: () => { toast({ title: "Reason created" }); setForm({ key: "", value: "" }); } },
+    );
+  };
+
+  return (
+    <div className="grid md:grid-cols-3 gap-6">
+      <Card className="md:col-span-2 shadow-sm">
+        <CardHeader>
+          <CardTitle>Not-Ready Reasons</CardTitle>
+          <CardDescription>Reasons agents can pick when toggling themselves off-shift (Break, Meeting, Training…).</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-32 w-full" />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-40">Key</TableHead>
+                  <TableHead>Label</TableHead>
+                  <TableHead className="w-32 text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {reasons?.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell><Badge variant="secondary" className="font-mono text-xs">{r.key}</Badge></TableCell>
+                    <TableCell className="font-medium">{r.value}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditing(r)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => deleteMut.mutate(r.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {reasons?.length === 0 && (
+                  <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">No reasons yet</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+      <Card className="shadow-sm h-fit">
+        <CardHeader><CardTitle className="text-base">Add Reason</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div><Label className="text-xs">Key</Label><Input value={form.key} onChange={(e) => setForm({ ...form, key: e.target.value })} placeholder="BREAK" className="h-9 text-sm font-mono uppercase" /></div>
+          <div><Label className="text-xs">Display Label</Label><Input value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} placeholder="Break" className="h-9 text-sm" /></div>
+          <Button className="w-full" size="sm" onClick={handleAdd} disabled={createMut.isPending}>
+            <Plus className="h-4 w-4 mr-2" /> Add Reason
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Reason</DialogTitle></DialogHeader>
+          {editing && (
+            <div className="space-y-3">
+              <div><Label className="text-xs">Key</Label><Input value={editing.key} onChange={(e) => setEditing({ ...editing, key: e.target.value.toUpperCase() })} className="h-9 text-sm font-mono uppercase" /></div>
+              <div><Label className="text-xs">Display Label</Label><Input value={editing.value} onChange={(e) => setEditing({ ...editing, value: e.target.value })} className="h-9 text-sm" /></div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={() => editing && updateMut.mutate({ id: editing.id, key: editing.key, value: editing.value }, { onSuccess: () => { setEditing(null); toast({ title: "Updated" }); } })}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

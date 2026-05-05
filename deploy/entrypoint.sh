@@ -38,6 +38,24 @@ PGPASSWORD="${POSTGRES_PASSWORD:-lotus_dev_password_change_me}" psql \
   -c "INSERT INTO role_permissions (role, can_view_chats, can_send_messages, can_view_reports, can_manage_customers, can_manage_settings) VALUES ('admin', true, true, true, true, true), ('agent', true, true, false, true, false) ON CONFLICT (role) DO NOTHING;" \
   >/dev/null 2>&1 || echo "(skip — table may not exist yet)"
 
+# ----- 2d. Seed default not-ready reasons (idempotent).
+echo "==> Seeding default not-ready reasons..."
+PGPASSWORD="${POSTGRES_PASSWORD:-lotus_dev_password_change_me}" psql \
+  -h postgres \
+  -U "${POSTGRES_USER:-lotus}" \
+  -d "${POSTGRES_DB:-lotus}" \
+  -c "INSERT INTO not_ready_reasons (key, value) VALUES ('BREAK', 'Break'), ('MEETING', 'Meeting'), ('COACHING', 'Coaching'), ('TRAINING', 'Training') ON CONFLICT (key) DO NOTHING;" \
+  >/dev/null 2>&1 || echo "(skip — table may not exist yet)"
+
+# ----- 2e. Seed default chat-reason categories (idempotent).
+echo "==> Seeding default chat-reason categories..."
+PGPASSWORD="${POSTGRES_PASSWORD:-lotus_dev_password_change_me}" psql \
+  -h postgres \
+  -U "${POSTGRES_USER:-lotus}" \
+  -d "${POSTGRES_DB:-lotus}" \
+  -c "INSERT INTO chat_reason_categories (title_en, title_ar) SELECT v.title_en, v.title_ar FROM (VALUES ('Sales', 'مبيعات'), ('Support', 'دعم فني'), ('Clinical', 'سريري'), ('Complaints', 'شكاوى')) AS v(title_en, title_ar) WHERE NOT EXISTS (SELECT 1 FROM chat_reason_categories c WHERE c.title_en = v.title_en);" \
+  >/dev/null 2>&1 || echo "(skip — table may not exist yet)"
+
 # ----- 3. Seed runs automatically inside the API server on startup -----
 # The api-server has a built-in idempotent bootstrap-seed that creates demo
 # users + tags + customers + conversations on first boot when the DB is empty.

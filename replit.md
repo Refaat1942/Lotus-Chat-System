@@ -32,6 +32,9 @@ lib/
 - **Per-role permissions**: `role_permissions` table with 5 fixed booleans per role (view chats / send messages / view reports / manage customers / manage settings); admin's `canManageSettings` is server-locked on
 - **Smart pending**: agent reply in an `open` conversation auto-flips status to `pending` (notes & completed never flip)
 - **Block customer**: `customers.is_blocked/blocked_reason/blocked_at`; POST `/api/customers/:id/block|unblock`; outbound messages refused (403) for blocked customers, internal notes still allowed
+- **Chat reasons** (Awfar-inspired): `chat_reasons` (EN/AR name + color + optional category) and `chat_reason_categories` (EN/AR title); admin CRUD in Settings; agents pick a reason per conversation from the chat header dropdown; persisted on `conversations.chat_reason_id`
+- **Agent availability**: `users.not_ready_reason_id` + `not_ready_since`; admin-managed `not_ready_reasons` (key/value, e.g. BREAK/MEETING/COACHING/TRAINING); TopBar dropdown toggles ready/not-ready with reason; GET/PATCH `/api/me/availability`
+- **AI patient brief**: POST `/api/customers/:id/ai-brief` returns a multi-discipline summary (profile / clinical / communication / next-action / risk) using `gpt-5` via the Replit OpenAI integration; pulls last 5 conversations × 6 messages for context; rendered in a refreshable card on the customer detail page
 
 ## Routing
 
@@ -88,7 +91,8 @@ Passwords seeded using PostgreSQL `pgcrypto` `crypt()` with blowfish (compatible
 
 - `artifacts/api-server/src/app.ts` — Express app, CORS, routes at `/api`
 - `artifacts/api-server/src/index.ts` — HTTP server + Socket.io setup
-- `artifacts/api-server/src/routes/` — auth, users, customers, conversations, messages, tags, quick-replies, analytics
+- `artifacts/api-server/src/routes/` — auth, users, customers, conversations, messages, tags, quick-replies, analytics, chat-reasons, chat-reason-categories, not-ready-reasons, me, customer-ai
+- `lib/integrations-openai-ai-server/` — Replit OpenAI integration wrapper (proxied via `AI_INTEGRATIONS_OPENAI_BASE_URL`/`_API_KEY`)
 - `artifacts/api-server/src/middlewares/auth.ts` — JWT middleware
 - `lib/db/src/schema/index.ts` — Drizzle table definitions
 - `lib/api-spec/openapi.yaml` — OpenAPI contract
