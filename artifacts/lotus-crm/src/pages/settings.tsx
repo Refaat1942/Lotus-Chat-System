@@ -82,7 +82,7 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Manage agents, workflow tags, and quick replies.</p>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-0 min-h-0">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr] grid-rows-[minmax(0,1fr)] gap-0 min-h-0">
         {/* Sidebar nav (vertical, grouped — no horizontal cramming) */}
         <aside className="lg:border-r border-border/60 bg-muted/20 lg:overflow-y-auto p-4 lg:p-5 space-y-5 shrink-0">
           {SETTINGS_GROUPS.map((group) => {
