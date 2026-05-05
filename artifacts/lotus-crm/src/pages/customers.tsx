@@ -15,7 +15,6 @@ import { format, parseISO, formatDistanceToNow } from "date-fns";
 import {
   Search, Plus, Phone, MapPin, FileText, User,
   MessageSquare, Clock, ChevronRight, ArrowLeft, Ban, ShieldCheck,
-  Sparkles, RefreshCw,
 } from "lucide-react";
 import { useBlockCustomer, useUnblockCustomer } from "@/lib/api-extra";
 
