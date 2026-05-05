@@ -176,6 +176,39 @@ export function useUpdateRolePermissions() {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Block / unblock customer
+// ---------------------------------------------------------------------------
+export function useBlockCustomer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: number; reason?: string }) =>
+      customFetch<unknown>(`/api/customers/${id}/block`, {
+        method: "POST",
+        body: JSON.stringify({ reason: reason ?? "" }),
+      }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["/api/customers"] });
+      qc.invalidateQueries({ queryKey: [`/api/customers/${vars.id}`] });
+    },
+  });
+}
+
+export function useUnblockCustomer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      customFetch<unknown>(`/api/customers/${id}/unblock`, {
+        method: "POST",
+        body: "{}",
+      }),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: ["/api/customers"] });
+      qc.invalidateQueries({ queryKey: [`/api/customers/${id}`] });
+    },
+  });
+}
+
 /**
  * Convenience: returns the permissions for a given role, with safe defaults
  * while the request is loading or before the row exists.

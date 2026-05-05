@@ -95,6 +95,32 @@ router.delete("/customers/:id", requireAuth, async (req, res) => {
   res.status(204).send();
 });
 
+// Block / unblock a customer. Blocking prevents agents from sending new
+// outbound messages to any of the customer's conversations (see messages.ts).
+// Internal notes are still allowed so staff can record context.
+router.post("/customers/:id/block", requireAuth, async (req, res) => {
+  const id = Number(req.params.id);
+  const reason = typeof req.body?.reason === "string"
+    ? req.body.reason.trim().slice(0, 500) || null
+    : null;
+  const [customer] = await db.update(customersTable)
+    .set({ isBlocked: true, blockedReason: reason, blockedAt: new Date() })
+    .where(eq(customersTable.id, id))
+    .returning();
+  if (!customer) { res.status(404).json({ error: "Not found" }); return; }
+  res.json(customer);
+});
+
+router.post("/customers/:id/unblock", requireAuth, async (req, res) => {
+  const id = Number(req.params.id);
+  const [customer] = await db.update(customersTable)
+    .set({ isBlocked: false, blockedReason: null, blockedAt: null })
+    .where(eq(customersTable.id, id))
+    .returning();
+  if (!customer) { res.status(404).json({ error: "Not found" }); return; }
+  res.json(customer);
+});
+
 router.get("/customers/:id/conversations", requireAuth, async (req, res) => {
   const id = Number(req.params.id);
   const conversations = await db.select({

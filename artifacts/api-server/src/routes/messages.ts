@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { messagesTable, conversationsTable } from "@workspace/db";
+import { messagesTable, conversationsTable, customersTable } from "@workspace/db";
 import { eq, asc } from "drizzle-orm";
 import { requireAuth, AuthRequest } from "../middlewares/auth";
 import type { Server as IOServer } from "socket.io";
@@ -37,6 +37,22 @@ router.post("/conversations/:id/messages", requireAuth, async (req: AuthRequest,
   if (!body) {
     res.status(400).json({ error: "body required" });
     return;
+  }
+
+  // Block guard: if the customer attached to this conversation is blocked,
+  // refuse outbound messages but still allow internal notes (so staff can
+  // record the reason / context without contacting the customer).
+  if (!isNote) {
+    const [blockRow] = await db
+      .select({ isBlocked: customersTable.isBlocked })
+      .from(conversationsTable)
+      .leftJoin(customersTable, eq(conversationsTable.customerId, customersTable.id))
+      .where(eq(conversationsTable.id, convId))
+      .limit(1);
+    if (blockRow?.isBlocked) {
+      res.status(403).json({ error: "Customer is blocked. Unblock to send messages." });
+      return;
+    }
   }
 
   // Sender identity is ALWAYS derived from the authenticated user — never

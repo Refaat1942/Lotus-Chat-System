@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -11,6 +11,9 @@ export const customersTable = pgTable("customers", {
   tags: text("tags").array().notNull().default([]),
   notes: text("notes"),
   prescriptionNotes: text("prescription_notes"),
+  isBlocked: boolean("is_blocked").notNull().default(false),
+  blockedReason: text("blocked_reason"),
+  blockedAt: timestamp("blocked_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

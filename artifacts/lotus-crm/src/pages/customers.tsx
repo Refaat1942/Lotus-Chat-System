@@ -14,8 +14,9 @@ import { z } from "zod";
 import { format, parseISO, formatDistanceToNow } from "date-fns";
 import {
   Search, Plus, Phone, MapPin, FileText, User,
-  MessageSquare, Clock, ChevronRight, ArrowLeft,
+  MessageSquare, Clock, ChevronRight, ArrowLeft, Ban, ShieldCheck,
 } from "lucide-react";
+import { useBlockCustomer, useUnblockCustomer } from "@/lib/api-extra";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -164,6 +165,15 @@ export default function CustomersPage() {
                           </AvatarFallback>
                         </Avatar>
                         <span className="font-medium">{customer.name}</span>
+                        {(customer as { isBlocked?: boolean }).isBlocked && (
+                          <Badge
+                            variant="destructive"
+                            className="text-[10px] h-5 px-1.5 gap-1"
+                          >
+                            <Ban className="h-3 w-3" />
+                            Blocked
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -217,10 +227,36 @@ function CustomerDetailView({
   customerId: number;
   onBack: () => void;
 }) {
+  const { toast } = useToast();
   const { data: customer, isLoading } = useGetCustomer(customerId, {
     query: { queryKey: getGetCustomerQueryKey(customerId) },
   });
   const { data: conversations, isLoading: convsLoading } = useGetCustomerConversations(customerId);
+  const blockMut = useBlockCustomer();
+  const unblockMut = useUnblockCustomer();
+  const isBlocked = !!(customer as { isBlocked?: boolean } | undefined)?.isBlocked;
+  const blockedReason = (customer as { blockedReason?: string | null } | undefined)?.blockedReason;
+  const handleToggleBlock = () => {
+    if (isBlocked) {
+      unblockMut.mutate(customerId, {
+        onSuccess: () => toast({ title: "Customer unblocked" }),
+        onError: () => toast({ title: "Failed to unblock", variant: "destructive" }),
+      });
+    } else {
+      const reason = window.prompt(
+        "Optional reason for blocking this customer (will be visible to staff):",
+        "",
+      );
+      if (reason === null) return;
+      blockMut.mutate(
+        { id: customerId, reason: reason.trim() },
+        {
+          onSuccess: () => toast({ title: "Customer blocked" }),
+          onError: () => toast({ title: "Failed to block", variant: "destructive" }),
+        },
+      );
+    }
+  };
 
   if (isLoading) {
     return (
@@ -257,8 +293,51 @@ function CustomerDetailView({
               {tag}
             </Badge>
           ))}
+          {isBlocked && (
+            <Badge variant="destructive" className="text-xs gap-1">
+              <Ban className="h-3 w-3" />
+              Blocked
+            </Badge>
+          )}
+        </div>
+        <div className="ml-auto">
+          <Button
+            variant={isBlocked ? "outline" : "destructive"}
+            size="sm"
+            onClick={handleToggleBlock}
+            disabled={blockMut.isPending || unblockMut.isPending}
+            className="gap-1.5"
+            data-testid="btn-toggle-block"
+          >
+            {isBlocked ? (
+              <>
+                <ShieldCheck className="h-4 w-4" />
+                Unblock
+              </>
+            ) : (
+              <>
+                <Ban className="h-4 w-4" />
+                Block customer
+              </>
+            )}
+          </Button>
         </div>
       </div>
+
+      {isBlocked && (
+        <Card className="border-destructive/40 bg-destructive/5">
+          <CardContent className="p-4 flex items-start gap-3">
+            <Ban className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium text-destructive">This customer is blocked.</p>
+              <p className="text-muted-foreground">
+                Outbound messages are disabled for all of their conversations. Internal notes are still allowed.
+                {blockedReason ? <> &middot; <span className="italic">{blockedReason}</span></> : null}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Profile card */}

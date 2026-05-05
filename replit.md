@@ -31,6 +31,7 @@ lib/
 - **Marketing campaigns**: `/marketing` admin page; `campaigns` table; send is a stub (records recipientCount but no provider call yet)
 - **Per-role permissions**: `role_permissions` table with 5 fixed booleans per role (view chats / send messages / view reports / manage customers / manage settings); admin's `canManageSettings` is server-locked on
 - **Smart pending**: agent reply in an `open` conversation auto-flips status to `pending` (notes & completed never flip)
+- **Block customer**: `customers.is_blocked/blocked_reason/blocked_at`; POST `/api/customers/:id/block|unblock`; outbound messages refused (403) for blocked customers, internal notes still allowed
 
 ## Routing
 
