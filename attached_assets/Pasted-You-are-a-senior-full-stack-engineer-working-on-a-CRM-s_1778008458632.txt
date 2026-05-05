@@ -1,0 +1,110 @@
+You are a senior full-stack engineer working on a CRM system.
+
+I want you to upgrade and refine my system with the following EXACT requirements:
+
+========================
+1. Branding & UI Theme
+========================
+- Apply a consistent theme across all pages using:
+  - Primary color: Green
+  - Secondary color: Grey
+- Update all pages (dashboard, chats, customers, etc.) to match this theme
+- Improve spacing, typography, and overall modern UI
+
+========================
+2. Logo Enhancement
+========================
+- Display company logo clearly in:
+  - Login page (large and centered)
+  - Top navbar
+- Make logo dynamic (can be changed from settings later)
+
+========================
+3. Chat Screen UX (IMPORTANT)
+========================
+- Improve chat screen to be clean, smooth, and modern like professional CRM systems
+- Optimize layout:
+  - Contacts list on left
+  - Chat messages center
+  - Customer info on right (if possible)
+- Add smooth animations and transitions
+
+========================
+4. Sidebar Enhancements
+========================
+- Improve left sidebar:
+  - Add Instagram channel
+  - Keep WhatsApp & Messenger
+- Make sidebar quick access and visually clear
+- Highlight active sections
+
+========================
+5. Marketing Campaign Feature
+========================
+- Add new module: "Marketing Campaigns"
+- Allow sending:
+  - WhatsApp messages
+  - Emails
+- Features:
+  - Select target customers
+  - Schedule or send instantly
+  - Track status (sent / failed)
+
+========================
+6. Customer Data Upgrade
+========================
+- Add new field: Address
+- Improve customer form validation (no empty required fields)
+- Prevent invalid data
+
+========================
+7. Status Update
+========================
+- Replace "Resolved" with "Completed" across system
+- Ensure consistency in all UI and database usage
+
+========================
+8. Notifications System 🔔
+========================
+- Add notification bell (top right)
+- Show unread count
+- Notifications include:
+  - New messages
+  - Pending chats
+  - Unreplied customers
+- Dropdown preview when clicked
+
+========================
+9. Agent Permissions System (VERY IMPORTANT)
+========================
+- Create permission control system:
+  - Control what each agent can see or access
+- Example:
+  - Can view chats?
+  - Can send messages?
+  - Can access reports?
+- Make it configurable per user/role
+
+========================
+10. Smart System Behavior
+========================
+- System should automatically:
+  - Detect pending chats
+  - Highlight chats needing response
+  - Show incomplete actions
+- Improve left panel logic to reflect real-time status
+
+========================
+11. Validation & Stability
+========================
+- Add proper validation everywhere
+- Prevent crashes or bad input
+- Keep system fast and scalable
+
+========================
+IMPORTANT:
+========================
+- Do NOT break existing features
+- Keep code clean and modular
+- Focus on real business usability
+- Apply changes step by step and explain what you're doing
