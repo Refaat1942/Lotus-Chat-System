@@ -88,7 +88,7 @@ router.get("/conversations", requireAuth, async (req: AuthRequest, res) => {
     .leftJoin(usersTable, eq(conversationsTable.assignedAgentId, usersTable.id));
 
   const conditions = [];
-  if (status) conditions.push(eq(conversationsTable.status, status as "open" | "resolved" | "pending"));
+  if (status) conditions.push(eq(conversationsTable.status, status as "open" | "completed" | "pending"));
   if (agentId) conditions.push(eq(conversationsTable.assignedAgentId, Number(agentId)));
   if (search) conditions.push(ilike(customersTable.name, `%${search}%`));
   if (tag) conditions.push(sql<boolean>`${tag} = ANY(${conversationsTable.tags})`);
@@ -216,7 +216,7 @@ router.post("/conversations/:id/resolve", requireAuth, async (req: AuthRequest, 
   if (req.user?.role === "agent" && existing.assignedAgentId !== req.user.id) {
     res.status(403).json({ error: "Forbidden" }); return;
   }
-  await db.update(conversationsTable).set({ status: "resolved", resolvedAt: new Date() }).where(eq(conversationsTable.id, id));
+  await db.update(conversationsTable).set({ status: "completed", resolvedAt: new Date() }).where(eq(conversationsTable.id, id));
   const full = await getConversationWithRelations(id);
 
   // The agent now has capacity — try to pull the next queued chat to them.

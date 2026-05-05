@@ -162,7 +162,7 @@ export type ConversationStatus =
 
 export const ConversationStatus = {
   open: "open",
-  resolved: "resolved",
+  completed: "completed",
   pending: "pending",
 } as const;
 
@@ -193,7 +193,7 @@ export type UpdateConversationBodyStatus =
 
 export const UpdateConversationBodyStatus = {
   open: "open",
-  resolved: "resolved",
+  completed: "completed",
   pending: "pending",
 } as const;
 
@@ -430,7 +430,7 @@ export type ListConversationsStatus =
 
 export const ListConversationsStatus = {
   open: "open",
-  resolved: "resolved",
+  completed: "completed",
   pending: "pending",
 } as const;
 

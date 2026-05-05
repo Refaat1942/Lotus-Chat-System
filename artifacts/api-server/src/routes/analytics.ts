@@ -59,7 +59,7 @@ router.get("/analytics/summary", requireAuth, async (_req, res) => {
   const [totalConvRow] = await db.select({ count: count() }).from(conversationsTable);
   const [activeRow] = await db.select({ count: count() }).from(conversationsTable).where(eq(conversationsTable.status, "open"));
   const [resolvedRow] = await db.select({ count: count() }).from(conversationsTable).where(
-    and(eq(conversationsTable.status, "resolved"), gte(conversationsTable.resolvedAt, startOfDay))
+    and(eq(conversationsTable.status, "completed"), gte(conversationsTable.resolvedAt, startOfDay))
   );
   const [pendingRow] = await db.select({ count: count() }).from(conversationsTable).where(eq(conversationsTable.status, "pending"));
   const [newTodayRow] = await db.select({ count: count() }).from(conversationsTable).where(gte(conversationsTable.createdAt, startOfDay));
@@ -223,10 +223,10 @@ router.get("/reports/overview", requireAuth, async (_req, res) => {
   const [openRow] = await db.select({ count: count() }).from(conversationsTable).where(eq(conversationsTable.status, "open"));
   const [pendingRow] = await db.select({ count: count() }).from(conversationsTable).where(eq(conversationsTable.status, "pending"));
   const [resolvedTodayRow] = await db.select({ count: count() }).from(conversationsTable).where(
-    and(eq(conversationsTable.status, "resolved"), gte(conversationsTable.resolvedAt, startOfDay)),
+    and(eq(conversationsTable.status, "completed"), gte(conversationsTable.resolvedAt, startOfDay)),
   );
   const [resolvedWeekRow] = await db.select({ count: count() }).from(conversationsTable).where(
-    and(eq(conversationsTable.status, "resolved"), gte(conversationsTable.resolvedAt, startOfWeek)),
+    and(eq(conversationsTable.status, "completed"), gte(conversationsTable.resolvedAt, startOfWeek)),
   );
   const [newTodayRow] = await db.select({ count: count() }).from(conversationsTable).where(gte(conversationsTable.createdAt, startOfDay));
   const [agentsOnlineRow] = await db.select({ count: count() }).from(usersTable).where(

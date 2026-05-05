@@ -12,7 +12,7 @@ export const conversationsTable = pgTable("conversations", {
   assignedAgentId: integer("assigned_agent_id").references(
     () => usersTable.id,
   ),
-  status: text("status", { enum: ["open", "resolved", "pending"] })
+  status: text("status", { enum: ["open", "completed", "pending"] })
     .notNull()
     .default("open"),
   channel: text("channel", {

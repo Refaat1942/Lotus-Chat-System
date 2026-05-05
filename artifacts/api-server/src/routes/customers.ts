@@ -36,13 +36,32 @@ router.get("/customers", requireAuth, async (req, res) => {
 });
 
 router.post("/customers", requireAuth, async (req, res) => {
-  const { name, phone, branch, tags, notes, prescriptionNotes } = req.body;
-  if (!name || !phone) {
-    res.status(400).json({ error: "name and phone required" });
+  const { name, phone, branch, address, tags, notes, prescriptionNotes } = req.body;
+  // Stronger validation — names need to be non-empty, phones need to look
+  // like a phone (7+ digits, allow + - space ()). Prevents junk records.
+  const nameStr = typeof name === "string" ? name.trim() : "";
+  const phoneStr = typeof phone === "string" ? phone.trim() : "";
+  if (nameStr.length < 2) {
+    res.status(400).json({ error: "name must be at least 2 characters" });
+    return;
+  }
+  const phoneDigits = phoneStr.replace(/[^\d]/g, "");
+  if (phoneDigits.length < 7) {
+    res.status(400).json({ error: "phone must contain at least 7 digits" });
+    return;
+  }
+  if (!/^[\d\s+\-()]+$/.test(phoneStr)) {
+    res.status(400).json({ error: "phone contains invalid characters" });
     return;
   }
   const [customer] = await db.insert(customersTable).values({
-    name, phone, branch: branch || null, tags: tags || [], notes: notes || null, prescriptionNotes: prescriptionNotes || null
+    name: nameStr,
+    phone: phoneStr,
+    branch: branch || null,
+    address: address ? String(address).trim() || null : null,
+    tags: Array.isArray(tags) ? tags : [],
+    notes: notes || null,
+    prescriptionNotes: prescriptionNotes || null,
   }).returning();
   res.status(201).json(customer);
 });
@@ -56,11 +75,12 @@ router.get("/customers/:id", requireAuth, async (req, res) => {
 
 router.put("/customers/:id", requireAuth, async (req, res) => {
   const id = Number(req.params.id);
-  const { name, phone, branch, tags, notes, prescriptionNotes } = req.body;
+  const { name, phone, branch, address, tags, notes, prescriptionNotes } = req.body;
   const updates: Record<string, unknown> = {};
   if (name !== undefined) updates.name = name;
   if (phone !== undefined) updates.phone = phone;
   if (branch !== undefined) updates.branch = branch;
+  if (address !== undefined) updates.address = address || null;
   if (tags !== undefined) updates.tags = tags;
   if (notes !== undefined) updates.notes = notes;
   if (prescriptionNotes !== undefined) updates.prescriptionNotes = prescriptionNotes;

@@ -12,7 +12,7 @@ import {
   Sparkles,
   Inbox,
 } from "lucide-react";
-import { FaWhatsapp, FaFacebookMessenger } from "react-icons/fa";
+import { FaWhatsapp, FaFacebookMessenger, FaInstagram } from "react-icons/fa";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
@@ -110,6 +110,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         {channelCounts.messenger > 0 && (
                           <span className="text-[10px] tabular-nums px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 font-medium">
                             {channelCounts.messenger}
+                          </span>
+                        )}
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={location === "/chat?channel=instagram"}>
+                      <Link href="/chat?channel=instagram" className="flex items-center gap-2">
+                        <FaInstagram className="h-3.5 w-3.5 text-pink-500" />
+                        <span className="flex-1">Instagram</span>
+                        {channelCounts.instagram > 0 && (
+                          <span className="text-[10px] tabular-nums px-1.5 py-0.5 rounded-full bg-pink-500/10 text-pink-600 font-medium">
+                            {channelCounts.instagram}
                           </span>
                         )}
                       </Link>

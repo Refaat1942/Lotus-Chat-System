@@ -7,6 +7,7 @@ export const customersTable = pgTable("customers", {
   name: text("name").notNull(),
   phone: text("phone").notNull(),
   branch: text("branch"),
+  address: text("address"),
   tags: text("tags").array().notNull().default([]),
   notes: text("notes"),
   prescriptionNotes: text("prescription_notes"),

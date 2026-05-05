@@ -73,9 +73,9 @@ type ConvWithChannel = {
 function getChatStatus(
   conv: ConvWithChannel,
   slaMinutes: number,
-): { label: "Waiting" | "Late" | "Replied" | "Resolved" | "Pending"; tone: string } {
-  if (conv.status === "resolved")
-    return { label: "Resolved", tone: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" };
+): { label: "Waiting" | "Late" | "Replied" | "Completed" | "Pending"; tone: string } {
+  if (conv.status === "completed")
+    return { label: "Completed", tone: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" };
   if (conv.status === "pending")
     return { label: "Pending", tone: "bg-slate-500/10 text-slate-600 border-slate-500/20" };
   if (conv.lastSenderType === "customer") {
@@ -101,7 +101,7 @@ function ChannelGlyph({ channel }: { channel?: string }) {
 export default function ChatPage() {
   const [selectedConvId, setSelectedConvId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "resolved" | "pending">("open");
+  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "completed" | "pending">("open");
   const [message, setMessage] = useState("");
   const { data: user } = useGetMe();
 
@@ -165,7 +165,7 @@ export default function ChatPage() {
               <SelectContent>
                 <SelectItem value="open">Open</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="resolved">Resolved</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="all">All</SelectItem>
               </SelectContent>
             </Select>
@@ -341,7 +341,7 @@ function ChatCenter({ conversationId, currentUserId, currentUserName, message, s
   const handleResolve = () => {
     resolveMut.mutate({ id: conversationId }, {
       onSuccess: () => {
-        toast({ title: "Conversation resolved" });
+        toast({ title: "Conversation completed" });
         queryClient.invalidateQueries({ queryKey: getGetConversationQueryKey(conversationId) });
         queryClient.invalidateQueries({ queryKey: getListConversationsQueryKey() });
       }
@@ -382,13 +382,13 @@ function ChatCenter({ conversationId, currentUserId, currentUserName, message, s
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {conv?.status !== "resolved" && (
+          {conv?.status !== "completed" && (
             <Button size="sm" variant="outline" onClick={handleResolve} disabled={resolveMut.isPending} data-testid="btn-resolve">
               <CheckCircle2 className="h-4 w-4 mr-2 text-emerald-500" />
               Resolve
             </Button>
           )}
-          {!conv?.assignedAgentId && conv?.status !== "resolved" && (
+          {!conv?.assignedAgentId && conv?.status !== "completed" && (
             <Button size="sm" variant="default" onClick={handleAssignToMe} disabled={assignMut.isPending} data-testid="btn-assign-me">
               Assign to me
             </Button>
@@ -465,7 +465,7 @@ function ChatCenter({ conversationId, currentUserId, currentUserName, message, s
       </ScrollArea>
 
       {/* Input Area */}
-      {conv?.status !== "resolved" ? (
+      {conv?.status !== "completed" ? (
         <div className="p-4 bg-card border-t border-border">
           <div className="max-w-3xl mx-auto relative rounded-xl border border-border bg-background focus-within:ring-1 focus-within:ring-ring overflow-hidden shadow-sm">
             {isNote && (
@@ -513,7 +513,7 @@ function ChatCenter({ conversationId, currentUserId, currentUserName, message, s
         </div>
       ) : (
         <div className="p-4 bg-muted text-center text-sm text-muted-foreground border-t border-border">
-          This conversation is resolved. 
+          This conversation is completed. 
         </div>
       )}
     </div>
@@ -592,7 +592,7 @@ function ChatContextPanel({ conversationId, onInsertReply }: { conversationId: n
 
   const handleStatusChange = (status: string) => {
     patchMut.mutate(
-      { id: conversationId, data: { status: status as "open" | "pending" | "resolved" } },
+      { id: conversationId, data: { status: status as "open" | "pending" | "completed" } },
       {
         onSuccess: () => { invalidate(); toast({ title: "Status updated" }); },
         onError: () => toast({ title: "Failed to update status", variant: "destructive" })
@@ -663,7 +663,7 @@ function ChatContextPanel({ conversationId, onInsertReply }: { conversationId: n
                     <SelectContent>
                       <SelectItem value="open">Open</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="resolved">Resolved</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -860,8 +860,8 @@ function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case "open":
       return <Badge variant="default" className="text-[9px] px-1 h-4 bg-primary text-primary-foreground hover:bg-primary">Open</Badge>;
-    case "resolved":
-      return <Badge variant="secondary" className="text-[9px] px-1 h-4 bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400">Resolved</Badge>;
+    case "completed":
+      return <Badge variant="secondary" className="text-[9px] px-1 h-4 bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400">Completed</Badge>;
     case "pending":
       return <Badge variant="secondary" className="text-[9px] px-1 h-4 bg-amber-100 text-amber-800 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400">Pending</Badge>;
     default:

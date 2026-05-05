@@ -67,7 +67,7 @@ export default function DashboardPage() {
           loading={statsLoading}
         />
         <KpiCard 
-          title="Resolved Today" 
+          title="Completed Today" 
           value={stats?.resolvedChats} 
           icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />} 
           loading={statsLoading}
@@ -139,7 +139,7 @@ export default function DashboardPage() {
         <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle>Agent Resolution Performance</CardTitle>
-            <CardDescription>Resolved vs Handled conversations</CardDescription>
+            <CardDescription>Completed vs Handled conversations</CardDescription>
           </CardHeader>
           <CardContent>
             {agentPerfLoading ? (
@@ -167,7 +167,7 @@ export default function DashboardPage() {
                       contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px" }}
                     />
                     <Bar dataKey="totalHandled" name="Total Handled" fill="hsl(var(--muted))" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="resolved" name="Resolved" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="resolved" name="Completed" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

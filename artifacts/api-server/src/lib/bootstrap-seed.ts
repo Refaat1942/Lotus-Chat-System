@@ -80,7 +80,7 @@ const SNIPPETS = [
   "Do you offer home blood pressure monitors?",
   "I'm following up on my last order.",
 ];
-const STATUSES = ["open", "open", "open", "pending", "resolved"] as const;
+const STATUSES = ["open", "open", "open", "pending", "completed"] as const;
 const CHANNELS = ["whatsapp", "whatsapp", "whatsapp", "messenger", "messenger", "instagram", "sms"] as const;
 const BRANCHES = ["Downtown", "Westside", "North"];
 
@@ -229,7 +229,7 @@ export async function bootstrapSeed(): Promise<void> {
           lastSenderType,
           unreadCount: i % 3,
           createdAt: customerAt,
-          resolvedAt: status === "resolved" ? lastAt : null,
+          resolvedAt: status === "completed" ? lastAt : null,
         })
         .returning({ id: conversationsTable.id });
 

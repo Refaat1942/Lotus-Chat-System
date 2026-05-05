@@ -43,9 +43,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 const createCustomerSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  phone: z.string().min(10, "Valid phone number required"),
+  name: z.string().trim().min(2, "Name must be at least 2 characters"),
+  phone: z
+    .string()
+    .trim()
+    .min(7, "Phone number is too short")
+    .regex(/^[\d\s+\-()]+$/, "Phone can only contain digits, spaces, +, -, ()"),
   branch: z.string().optional(),
+  address: z.string().trim().max(200, "Address is too long").optional(),
   tags: z.string().optional(),
   notes: z.string().optional(),
   prescriptionNotes: z.string().optional(),
@@ -283,6 +288,14 @@ function CustomerDetailView({
                   <span>{customer.branch}</span>
                 </div>
               )}
+              {(customer as { address?: string | null }).address && (
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5 text-emerald-600" />
+                  <span className="break-words">
+                    {(customer as { address?: string | null }).address}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="h-3.5 w-3.5 shrink-0" />
                 <span>Joined {format(parseISO(customer.createdAt), "MMM d, yyyy")}</span>
@@ -358,7 +371,7 @@ function CustomerDetailView({
                             variant={
                               conv.status === "open"
                                 ? "default"
-                                : conv.status === "resolved"
+                                : conv.status === "completed"
                                   ? "secondary"
                                   : "outline"
                             }
@@ -426,6 +439,7 @@ function CreateCustomerDialog({
       name: "",
       phone: "",
       branch: "",
+      address: "",
       tags: "",
       notes: "",
       prescriptionNotes: "",
@@ -438,15 +452,19 @@ function CreateCustomerDialog({
       : [];
 
     createMut.mutate(
+      // address is a new field on the customer schema not yet in the
+      // generated openapi types; cast keeps TS happy while the server
+      // still validates the payload.
       {
         data: {
           name: values.name,
           phone: values.phone,
           branch: values.branch,
+          address: values.address,
           tags: tagsArray,
           notes: values.notes,
           prescriptionNotes: values.prescriptionNotes,
-        },
+        } as never,
       },
       {
         onSuccess: () => {
@@ -545,6 +563,26 @@ function CreateCustomerDialog({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-1.5">
+                    <MapPin className="h-3 w-3" />
+                    Address
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="123 Main St, Apt 4B, Cairo, Egypt"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

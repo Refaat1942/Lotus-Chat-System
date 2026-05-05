@@ -213,7 +213,7 @@ export default function ReportsPage() {
           loading={ovLoading}
         />
         <KpiCard
-          title="Resolved Today"
+          title="Completed Today"
           value={overview?.resolvedToday}
           icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />}
           loading={ovLoading}
@@ -334,7 +334,7 @@ export default function ReportsPage() {
               loading={volLoading}
             />
             <SummaryStatCard
-              title="Resolved in range"
+              title="Completed in range"
               value={
                 volLoading
                   ? "—"
@@ -455,7 +455,7 @@ export default function ReportsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Agent resolution performance</CardTitle>
-              <CardDescription>Total handled vs. resolved per agent</CardDescription>
+              <CardDescription>Total handled vs. completed per agent</CardDescription>
             </CardHeader>
             <CardContent>
               {agLoading ? (
@@ -477,7 +477,7 @@ export default function ReportsPage() {
                       />
                       <Legend />
                       <Bar dataKey="totalHandled" name="Handled" fill="hsl(var(--muted))" radius={[6, 6, 0, 0]} />
-                      <Bar dataKey="resolved" name="Resolved" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="resolved" name="Completed" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -496,7 +496,7 @@ export default function ReportsPage() {
                   <TableRow>
                     <TableHead>Agent</TableHead>
                     <TableHead className="text-right">Handled</TableHead>
-                    <TableHead className="text-right">Resolved</TableHead>
+                    <TableHead className="text-right">Completed</TableHead>
                     <TableHead className="text-right">Resolution rate</TableHead>
                     <TableHead className="text-right">Active</TableHead>
                     <TableHead className="text-right">Avg response</TableHead>
@@ -700,7 +700,7 @@ export default function ReportsPage() {
                       />
                       <Legend />
                       <Bar dataKey="conversationCount" name="Total" fill="hsl(var(--primary))" radius={[0, 6, 6, 0]} />
-                      <Bar dataKey="resolvedCount" name="Resolved" fill="#10b981" radius={[0, 6, 6, 0]} />
+                      <Bar dataKey="resolvedCount" name="Completed" fill="#10b981" radius={[0, 6, 6, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -719,7 +719,7 @@ export default function ReportsPage() {
                     <TableHead>Branch</TableHead>
                     <TableHead className="text-right">Customers</TableHead>
                     <TableHead className="text-right">Total chats</TableHead>
-                    <TableHead className="text-right">Resolved</TableHead>
+                    <TableHead className="text-right">Completed</TableHead>
                     <TableHead className="text-right">Open</TableHead>
                     <TableHead className="text-right">Avg response</TableHead>
                   </TableRow>

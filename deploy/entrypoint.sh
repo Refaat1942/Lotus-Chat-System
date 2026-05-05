@@ -19,6 +19,16 @@ pnpm exec drizzle-kit push --config ./drizzle.config.ts || {
 }
 cd /app
 
+# ----- 2b. One-time data migration: rename status 'resolved' -> 'completed'.
+# Idempotent: only updates rows where the old value is still present.
+echo "==> Migrating legacy 'resolved' status to 'completed'..."
+PGPASSWORD="${POSTGRES_PASSWORD:-lotus_dev_password_change_me}" psql \
+  -h postgres \
+  -U "${POSTGRES_USER:-lotus}" \
+  -d "${POSTGRES_DB:-lotus}" \
+  -c "UPDATE conversations SET status='completed' WHERE status='resolved';" \
+  >/dev/null 2>&1 || echo "(skip — table may not exist yet)"
+
 # ----- 3. Seed runs automatically inside the API server on startup -----
 # The api-server has a built-in idempotent bootstrap-seed that creates demo
 # users + tags + customers + conversations on first boot when the DB is empty.

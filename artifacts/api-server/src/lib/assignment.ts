@@ -154,7 +154,7 @@ export async function tryAutoAssign(
       | undefined;
     if (!conv) return { agentId: null as number | null, queued: false };
     if (conv.assigned_agent_id) return { agentId: conv.assigned_agent_id, queued: false };
-    if (conv.status === "resolved") return { agentId: null, queued: false };
+    if (conv.status === "completed") return { agentId: null, queued: false };
 
     // 2) Pick a candidate from currently-available agents.
     const candidates = (await listAvailableAgents(tx as unknown as typeof db)).filter(

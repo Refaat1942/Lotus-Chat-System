@@ -233,7 +233,7 @@ export const GetCustomerConversationsResponseItem = zod.object({
       createdAt: zod.coerce.date(),
     })
     .nullish(),
-  status: zod.enum(["open", "resolved", "pending"]),
+  status: zod.enum(["open", "completed", "pending"]),
   tags: zod.array(zod.string()),
   lastMessage: zod.string().nullish(),
   lastMessageAt: zod.coerce.date().nullish(),
@@ -250,7 +250,7 @@ export const GetCustomerConversationsResponse = zod.array(
  * @summary List conversations
  */
 export const ListConversationsQueryParams = zod.object({
-  status: zod.enum(["open", "resolved", "pending"]).optional(),
+  status: zod.enum(["open", "completed", "pending"]).optional(),
   agentId: zod.coerce.number().optional(),
   tag: zod.coerce.string().optional(),
   search: zod.coerce.string().optional(),
@@ -282,7 +282,7 @@ export const ListConversationsResponseItem = zod.object({
       createdAt: zod.coerce.date(),
     })
     .nullish(),
-  status: zod.enum(["open", "resolved", "pending"]),
+  status: zod.enum(["open", "completed", "pending"]),
   tags: zod.array(zod.string()),
   lastMessage: zod.string().nullish(),
   lastMessageAt: zod.coerce.date().nullish(),
@@ -337,7 +337,7 @@ export const GetConversationResponse = zod.object({
       createdAt: zod.coerce.date(),
     })
     .nullish(),
-  status: zod.enum(["open", "resolved", "pending"]),
+  status: zod.enum(["open", "completed", "pending"]),
   tags: zod.array(zod.string()),
   lastMessage: zod.string().nullish(),
   lastMessageAt: zod.coerce.date().nullish(),
@@ -356,7 +356,7 @@ export const UpdateConversationParams = zod.object({
 
 export const UpdateConversationBody = zod.object({
   tags: zod.array(zod.string()).optional(),
-  status: zod.enum(["open", "resolved", "pending"]).optional(),
+  status: zod.enum(["open", "completed", "pending"]).optional(),
   assignedAgentId: zod.number().nullish(),
 });
 
@@ -386,7 +386,7 @@ export const UpdateConversationResponse = zod.object({
       createdAt: zod.coerce.date(),
     })
     .nullish(),
-  status: zod.enum(["open", "resolved", "pending"]),
+  status: zod.enum(["open", "completed", "pending"]),
   tags: zod.array(zod.string()),
   lastMessage: zod.string().nullish(),
   lastMessageAt: zod.coerce.date().nullish(),
@@ -405,7 +405,7 @@ export const PatchConversationParams = zod.object({
 
 export const PatchConversationBody = zod.object({
   tags: zod.array(zod.string()).optional(),
-  status: zod.enum(["open", "resolved", "pending"]).optional(),
+  status: zod.enum(["open", "completed", "pending"]).optional(),
   assignedAgentId: zod.number().nullish(),
 });
 
@@ -435,7 +435,7 @@ export const PatchConversationResponse = zod.object({
       createdAt: zod.coerce.date(),
     })
     .nullish(),
-  status: zod.enum(["open", "resolved", "pending"]),
+  status: zod.enum(["open", "completed", "pending"]),
   tags: zod.array(zod.string()),
   lastMessage: zod.string().nullish(),
   lastMessageAt: zod.coerce.date().nullish(),
@@ -482,7 +482,7 @@ export const AssignConversationResponse = zod.object({
       createdAt: zod.coerce.date(),
     })
     .nullish(),
-  status: zod.enum(["open", "resolved", "pending"]),
+  status: zod.enum(["open", "completed", "pending"]),
   tags: zod.array(zod.string()),
   lastMessage: zod.string().nullish(),
   lastMessageAt: zod.coerce.date().nullish(),
@@ -525,7 +525,7 @@ export const ResolveConversationResponse = zod.object({
       createdAt: zod.coerce.date(),
     })
     .nullish(),
-  status: zod.enum(["open", "resolved", "pending"]),
+  status: zod.enum(["open", "completed", "pending"]),
   tags: zod.array(zod.string()),
   lastMessage: zod.string().nullish(),
   lastMessageAt: zod.coerce.date().nullish(),
