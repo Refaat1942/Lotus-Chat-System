@@ -16,7 +16,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format, parseISO } from "date-fns";
-import { Trash2, Plus, Shield, Users, Tag as TagIcon, MessageSquare, Sliders, Palette, Upload, X } from "lucide-react";
+import { Trash2, Plus, Shield, Users, Tag as TagIcon, MessageSquare, Sliders, Palette, Upload, X, Lock } from "lucide-react";
+import { useRolePermissions, useUpdateRolePermissions, type RolePermissions as RolePerms, type RoleName } from "@/lib/api-extra";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
@@ -57,6 +58,7 @@ export default function SettingsPage() {
           <TabsTrigger value="replies" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><MessageSquare className="h-4 w-4 mr-2" /> Quick Replies</TabsTrigger>
           <TabsTrigger value="distribution" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><Sliders className="h-4 w-4 mr-2" /> Chat Distribution</TabsTrigger>
           <TabsTrigger value="branding" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><Palette className="h-4 w-4 mr-2" /> Branding</TabsTrigger>
+          <TabsTrigger value="permissions" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><Lock className="h-4 w-4 mr-2" /> Permissions</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-6 m-0">
@@ -78,7 +80,105 @@ export default function SettingsPage() {
         <TabsContent value="branding" className="space-y-6 m-0">
           <BrandingSettings />
         </TabsContent>
+
+        <TabsContent value="permissions" className="space-y-6 m-0">
+          <PermissionsSettings />
+        </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// PERMISSIONS — fixed booleans per role
+// -----------------------------------------------------------------------------
+const PERMISSION_FIELDS: { key: keyof Omit<RolePerms, "role" | "updatedAt">; label: string; description: string }[] = [
+  { key: "canViewChats", label: "View chats", description: "See and open conversations in the inbox." },
+  { key: "canSendMessages", label: "Send messages", description: "Reply to customers in conversations." },
+  { key: "canViewReports", label: "View reports", description: "Access analytics and reporting screens." },
+  { key: "canManageCustomers", label: "Manage customers", description: "Create, edit, and delete customer records." },
+  { key: "canManageSettings", label: "Manage settings", description: "Change system settings (admin always retains this)." },
+];
+
+function PermissionsSettings() {
+  const { data, isLoading } = useRolePermissions();
+  const updateMut = useUpdateRolePermissions();
+  const { toast } = useToast();
+
+  const handleToggle = (
+    role: RoleName,
+    key: keyof Omit<RolePerms, "role" | "updatedAt">,
+    value: boolean,
+  ) => {
+    if (role === "admin" && key === "canManageSettings" && !value) {
+      toast({
+        title: "Admins must keep settings access",
+        description: "This safeguard prevents accidental lockout.",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateMut.mutate(
+      { role, data: { [key]: value } },
+      {
+        onError: () =>
+          toast({ title: "Failed to update permission", variant: "destructive" }),
+      },
+    );
+  };
+
+  if (isLoading) {
+    return <Skeleton className="h-64 w-full" />;
+  }
+
+  const adminPerms = data?.find((r) => r.role === "admin");
+  const agentPerms = data?.find((r) => r.role === "agent");
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {(["admin", "agent"] as const).map((role) => {
+        const row = role === "admin" ? adminPerms : agentPerms;
+        return (
+          <Card key={role}>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base capitalize flex items-center gap-2">
+                <Shield className="h-4 w-4 text-primary" />
+                {role} permissions
+              </CardTitle>
+              <CardDescription>
+                {role === "admin"
+                  ? "Full-control role. Settings access is locked on."
+                  : "What agents can do across the workspace."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {PERMISSION_FIELDS.map((field) => {
+                const enabled = row ? row[field.key] : (role === "admin");
+                const isAdminLocked = role === "admin" && field.key === "canManageSettings";
+                return (
+                  <div
+                    key={field.key}
+                    className="flex items-start justify-between gap-4 p-3 rounded-md border border-border/60 bg-muted/20"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{field.label}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {field.description}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={!!enabled}
+                      disabled={updateMut.isPending || isAdminLocked}
+                      onCheckedChange={(v) => handleToggle(role, field.key, v)}
+                      data-testid={`switch-${role}-${field.key}`}
+                    />
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }

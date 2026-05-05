@@ -7,14 +7,12 @@ import {
   FileBarChart,
   Settings,
   LogOut,
-  Moon,
-  Sun,
   Sparkles,
   Inbox,
+  Megaphone,
 } from "lucide-react";
 import { FaWhatsapp, FaFacebookMessenger, FaInstagram } from "react-icons/fa";
 import { useAuth } from "@/lib/auth";
-import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import {
   SidebarProvider,
@@ -32,11 +30,11 @@ import {
 import { AvailabilityToggle } from "@/components/availability-toggle";
 import { useBranding } from "@/lib/api-extra";
 import { useInsights } from "@/lib/api-extra";
+import { TopBar } from "@/components/top-bar";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
-  const { theme, setTheme } = useTheme();
   const { data: branding } = useBranding();
   const { data: insights } = useInsights();
 
@@ -165,6 +163,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
               {user?.role === "admin" && (
                 <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/marketing")}>
+                    <Link href="/marketing" className="flex items-center gap-3 transition-colors">
+                      <Megaphone className="h-4 w-4" />
+                      <span>Marketing</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
+              {user?.role === "admin" && (
+                <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={isActive("/settings")}>
                     <Link href="/settings" className="flex items-center gap-3 transition-colors">
                       <Settings className="h-4 w-4" />
@@ -177,20 +186,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </SidebarContent>
 
           <SidebarFooter className="border-t border-border p-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col min-w-0">
-                <span className="text-sm font-medium leading-none truncate">{user?.name}</span>
-                <span className="text-xs text-muted-foreground mt-1 capitalize">{user?.role}</span>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="h-8 w-8 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </Button>
-            </div>
             {user?.role === "agent" && <AvailabilityToggle />}
             <Button
               variant="outline"
@@ -203,8 +198,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </Button>
           </SidebarFooter>
         </Sidebar>
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden animate-in fade-in duration-300">
-          {children}
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <TopBar />
+          <div className="flex-1 min-h-0 overflow-hidden animate-in fade-in duration-300">
+            {children}
+          </div>
         </main>
       </div>
     </SidebarProvider>

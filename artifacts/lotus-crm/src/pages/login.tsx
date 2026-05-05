@@ -62,22 +62,29 @@ export default function LoginPage() {
   const companyName = branding?.companyName ?? "Lotus Pharmacies";
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-muted/40 via-background to-muted/30 px-4">
-      <div className="w-full max-w-[400px] animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="mb-8 flex flex-col items-center justify-center text-center">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/40 px-4 relative overflow-hidden">
+      {/* Decorative ambient blobs in brand colours */}
+      <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
+
+      <div className="relative w-full max-w-[420px] animate-in fade-in slide-in-from-bottom-6 duration-700">
+        <div className="mb-10 flex flex-col items-center justify-center text-center">
           {branding?.logoUrl ? (
             <img
               src={branding.logoUrl}
               alt={companyName}
-              className="h-16 w-16 mb-4 rounded-2xl object-cover ring-1 ring-border shadow-md"
+              className="h-28 w-28 mb-6 rounded-3xl object-cover ring-2 ring-primary/20 shadow-xl shadow-primary/10"
+              data-testid="login-logo"
             />
           ) : (
-            <div className="bg-primary/10 text-primary p-3 rounded-2xl mb-4 shadow-sm">
-              <Leaf className="h-8 w-8" />
+            <div className="bg-primary text-primary-foreground p-5 rounded-3xl mb-6 shadow-xl shadow-primary/20 ring-2 ring-primary/20">
+              <Leaf className="h-12 w-12" />
             </div>
           )}
-          <h1 className="text-2xl font-bold tracking-tight">{companyName}</h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-primary bg-clip-text text-transparent">
+            {companyName}
+          </h1>
+          <p className="text-muted-foreground text-sm mt-2">
             CRM &amp; Conversation Platform
           </p>
         </div>

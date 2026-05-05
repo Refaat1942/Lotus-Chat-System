@@ -10,6 +10,8 @@ import quickRepliesRouter from "./quick-replies";
 import analyticsRouter from "./analytics";
 import settingsRouter from "./settings";
 import insightsRouter from "./insights";
+import campaignsRouter from "./campaigns";
+import rolePermissionsRouter from "./role-permissions";
 
 const router: IRouter = Router();
 
@@ -24,5 +26,7 @@ router.use(quickRepliesRouter);
 router.use(analyticsRouter);
 router.use(settingsRouter);
 router.use(insightsRouter);
+router.use(campaignsRouter);
+router.use(rolePermissionsRouter);
 
 export default router;

@@ -25,7 +25,12 @@ lib/
 - **Database**: PostgreSQL + Drizzle ORM
 - **API contract**: OpenAPI 3.1 → Orval codegen (React Query hooks + Zod schemas)
 - **Frontend**: React 19, Vite 7, Tailwind CSS, Radix UI, Wouter routing, TanStack Query, Recharts
-- **Theme**: Green palette (#2E7D32 primary), light/dark mode via next-themes
+- **Theme**: Refined emerald-green palette (HSL 152° 55% 30% primary) with warm-grey neutrals; light/dark mode via next-themes
+- **Layout**: Sidebar (sections: Dashboard, Inbox+channel sub-items, AI Insights, Customers, Reports, Marketing [admin], Settings [admin]) + global TopBar (logo + notifications bell + theme toggle + user)
+- **Notifications bell**: Popover in TopBar; derives urgent/unreplied items from `/api/insights` (no separate endpoint)
+- **Marketing campaigns**: `/marketing` admin page; `campaigns` table; send is a stub (records recipientCount but no provider call yet)
+- **Per-role permissions**: `role_permissions` table with 5 fixed booleans per role (view chats / send messages / view reports / manage customers / manage settings); admin's `canManageSettings` is server-locked on
+- **Smart pending**: agent reply in an `open` conversation auto-flips status to `pending` (notes & completed never flip)
 
 ## Routing
 

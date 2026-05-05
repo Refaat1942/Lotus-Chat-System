@@ -74,53 +74,53 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  /* Backgrounds */
-  --background: 120 8% 97%; /* #F8FAF8 */
-  --foreground: 122 20% 15%;
-  --border: 122 10% 90%;
-  
-  --card: 0 0% 100%;
-  --card-foreground: 122 20% 15%;
-  --card-border: 122 10% 92%;
+  /* Backgrounds — soft warm-grey-green canvas */
+  --background: 140 12% 97%; /* very subtle green-tinted off-white */
+  --foreground: 152 30% 12%;
+  --border: 150 12% 88%;
 
-  --sidebar: 120 8% 97%;
-  --sidebar-foreground: 122 20% 15%;
-  --sidebar-border: 122 10% 90%;
-  --sidebar-primary: 122 39% 33%;
+  --card: 0 0% 100%;
+  --card-foreground: 152 30% 12%;
+  --card-border: 150 12% 91%;
+
+  --sidebar: 152 18% 96%;
+  --sidebar-foreground: 152 30% 14%;
+  --sidebar-border: 150 12% 88%;
+  --sidebar-primary: 152 55% 30%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 122 15% 92%;
-  --sidebar-accent-foreground: 122 39% 33%;
-  --sidebar-ring: 122 39% 33%;
+  --sidebar-accent: 152 25% 91%;
+  --sidebar-accent-foreground: 152 55% 24%;
+  --sidebar-ring: 152 55% 30%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 122 20% 15%;
-  --popover-border: 122 10% 90%;
+  --popover-foreground: 152 30% 12%;
+  --popover-border: 150 12% 88%;
 
-  /* Brand */
-  --primary: 122 39% 33%; /* #2E7D32 */
+  /* Brand — deep, confident emerald-green */
+  --primary: 152 55% 30%; /* rich pharmacy green */
   --primary-foreground: 0 0% 100%;
-  
-  --secondary: 122 20% 94%;
-  --secondary-foreground: 122 39% 33%;
-  
-  --muted: 122 10% 94%;
-  --muted-foreground: 122 15% 45%;
-  
-  --accent: 122 39% 33%;
+
+  --secondary: 150 16% 93%; /* warm grey */
+  --secondary-foreground: 152 55% 24%;
+
+  --muted: 150 12% 94%;
+  --muted-foreground: 152 12% 42%;
+
+  --accent: 152 55% 30%;
   --accent-foreground: 0 0% 100%;
   
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
 
-  --input: 122 10% 88%;
-  --ring: 122 39% 33%;
-  
-  /* Charts - Clinical, calm, varied */
-  --chart-1: 122 39% 33%; /* Primary green */
-  --chart-2: 156 60% 45%; /* Teal */
-  --chart-3: 198 80% 50%; /* Blue */
-  --chart-4: 43 100% 55%; /* Warm yellow */
-  --chart-5: 280 65% 60%; /* Purple */
+  --input: 150 12% 87%;
+  --ring: 152 55% 30%;
+
+  /* Charts — clinical, calm palette aligned with the new green */
+  --chart-1: 152 55% 30%; /* Primary green */
+  --chart-2: 168 50% 42%; /* Teal-green */
+  --chart-3: 200 75% 48%; /* Blue */
+  --chart-4: 38 92% 55%;  /* Warm amber */
+  --chart-5: 282 55% 58%; /* Soft purple */
 
   --app-font-sans: 'Inter', sans-serif;
   --app-font-serif: Georgia, serif;
@@ -155,53 +155,52 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  /* Backgrounds - deep charcoal, not pure black */
-  --background: 122 10% 8%; 
-  --foreground: 120 10% 94%;
-  --border: 122 10% 16%;
-  
-  --card: 122 10% 11%;
-  --card-foreground: 120 10% 94%;
-  --card-border: 122 10% 18%;
+  /* Backgrounds — deep neutral charcoal-green */
+  --background: 152 12% 8%;
+  --foreground: 150 10% 94%;
+  --border: 152 10% 17%;
 
-  --sidebar: 122 10% 10%;
-  --sidebar-foreground: 120 10% 94%;
-  --sidebar-border: 122 10% 16%;
-  --sidebar-primary: 122 45% 45%;
-  --sidebar-primary-foreground: 122 10% 8%;
-  --sidebar-accent: 122 15% 18%;
-  --sidebar-accent-foreground: 122 45% 45%;
-  --sidebar-ring: 122 45% 45%;
+  --card: 152 12% 11%;
+  --card-foreground: 150 10% 94%;
+  --card-border: 152 10% 19%;
 
-  --popover: 122 10% 12%;
-  --popover-foreground: 120 10% 94%;
-  --popover-border: 122 10% 20%;
+  --sidebar: 152 12% 10%;
+  --sidebar-foreground: 150 10% 94%;
+  --sidebar-border: 152 10% 17%;
+  --sidebar-primary: 152 50% 48%;
+  --sidebar-primary-foreground: 152 12% 8%;
+  --sidebar-accent: 152 18% 18%;
+  --sidebar-accent-foreground: 152 50% 60%;
+  --sidebar-ring: 152 50% 48%;
 
-  /* Brand */
-  --primary: 122 45% 45%; /* Slightly brighter green for dark mode */
-  --primary-foreground: 122 10% 8%;
-  
-  --secondary: 122 15% 18%;
-  --secondary-foreground: 122 45% 45%;
-  
-  --muted: 122 15% 15%;
-  --muted-foreground: 122 10% 65%;
-  
-  --accent: 122 45% 45%;
-  --accent-foreground: 122 10% 8%;
-  
+  --popover: 152 12% 12%;
+  --popover-foreground: 150 10% 94%;
+  --popover-border: 152 10% 21%;
+
+  /* Brand — brighter green for legibility on dark */
+  --primary: 152 50% 48%;
+  --primary-foreground: 152 12% 8%;
+
+  --secondary: 152 18% 18%;
+  --secondary-foreground: 152 50% 60%;
+
+  --muted: 152 14% 16%;
+  --muted-foreground: 150 10% 62%;
+
+  --accent: 152 50% 48%;
+  --accent-foreground: 152 12% 8%;
+
   --destructive: 0 65% 55%;
-  --destructive-foreground: 120 10% 94%;
+  --destructive-foreground: 150 10% 94%;
 
-  --input: 122 10% 22%;
-  --ring: 122 45% 45%;
-  
-  /* Charts - Brightened for dark mode */
-  --chart-1: 122 45% 45%;
-  --chart-2: 156 60% 55%;
-  --chart-3: 198 80% 60%;
-  --chart-4: 43 100% 65%;
-  --chart-5: 280 65% 70%;
+  --input: 152 12% 22%;
+  --ring: 152 50% 48%;
+
+  --chart-1: 152 50% 48%;
+  --chart-2: 168 55% 55%;
+  --chart-3: 200 75% 60%;
+  --chart-4: 38 92% 62%;
+  --chart-5: 282 55% 68%;
 }
 
 @layer base {

@@ -5,3 +5,5 @@ export * from "./messages";
 export * from "./tags";
 export * from "./quick-replies";
 export * from "./settings";
+export * from "./campaigns";
+export * from "./role-permissions";

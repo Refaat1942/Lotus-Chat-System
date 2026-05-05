@@ -15,6 +15,7 @@ import CustomersPage from "@/pages/customers";
 import ReportsPage from "@/pages/reports";
 import SettingsPage from "@/pages/settings";
 import InsightsPage from "@/pages/insights";
+import MarketingPage from "@/pages/marketing";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -92,6 +93,7 @@ function Router() {
       <Route path="/customers">{() => <ProtectedRoute component={CustomersPage} />}</Route>
       <Route path="/reports">{() => <ProtectedRoute component={ReportsPage} />}</Route>
       <Route path="/insights">{() => <ProtectedRoute component={InsightsPage} />}</Route>
+      <Route path="/marketing">{() => <AdminRoute component={MarketingPage} />}</Route>
 
       {/* Admin Route */}
       <Route path="/settings">{() => <AdminRoute component={SettingsPage} />}</Route>

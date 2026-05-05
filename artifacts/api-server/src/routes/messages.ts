@@ -55,11 +55,30 @@ router.post("/conversations/:id/messages", requireAuth, async (req: AuthRequest,
     status: "sent",
   }).returning();
 
-  await db.update(conversationsTable).set({
-    lastMessage: body,
-    lastMessageAt: new Date(),
-    lastSenderType: senderType,
-  }).where(eq(conversationsTable.id, convId));
+  // Smart pending detection: when an agent replies in an open conversation,
+  // mark it as "pending" — i.e. we are now waiting on the customer. Internal
+  // notes do NOT change status (they aren't visible to the customer). When the
+  // customer replies via the inbound channel, that path will set status='open'
+  // again. We never override 'completed' here.
+  const [current] = await db
+    .select({ status: conversationsTable.status })
+    .from(conversationsTable)
+    .where(eq(conversationsTable.id, convId));
+
+  const shouldFlipToPending =
+    !isNote &&
+    senderType === "agent" &&
+    current?.status === "open";
+
+  await db
+    .update(conversationsTable)
+    .set({
+      lastMessage: body,
+      lastMessageAt: new Date(),
+      lastSenderType: senderType,
+      ...(shouldFlipToPending ? { status: "pending" as const } : {}),
+    })
+    .where(eq(conversationsTable.id, convId));
 
   const io: IOServer = (req as AuthRequest & { app: { get: (k: string) => IOServer } }).app.get("io");
   if (io) {
