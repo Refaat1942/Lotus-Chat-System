@@ -15,8 +15,12 @@ import { format, parseISO, formatDistanceToNow } from "date-fns";
 import {
   Search, Plus, Phone, MapPin, FileText, User,
   MessageSquare, Clock, ChevronRight, ArrowLeft, Ban, ShieldCheck,
+  Check, ChevronsUpDown, X as XIcon,
 } from "lucide-react";
 import { useBlockCustomer, useUnblockCustomer } from "@/lib/api-extra";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,7 +56,7 @@ const createCustomerSchema = z.object({
     .regex(/^[\d\s+\-()]+$/, "Phone can only contain digits, spaces, +, -, ()"),
   branch: z.string().optional(),
   address: z.string().trim().max(200, "Address is too long").optional(),
-  tags: z.string().optional(),
+  tags: z.array(z.string()).default([]),
   notes: z.string().optional(),
   prescriptionNotes: z.string().optional(),
 });
@@ -119,6 +123,7 @@ export default function CustomersPage() {
               <TableHead>Patient</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Branch</TableHead>
+              <TableHead>Address</TableHead>
               <TableHead>Tags</TableHead>
               <TableHead>Joined</TableHead>
               <TableHead className="w-[50px]" />
@@ -136,6 +141,7 @@ export default function CustomersPage() {
                   </TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                   <TableCell />
@@ -144,7 +150,7 @@ export default function CustomersPage() {
               : customers?.length === 0
                 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                       <User className="h-8 w-8 mx-auto mb-2 opacity-20" />
                       No patients found matching your criteria.
                     </TableCell>
@@ -188,6 +194,18 @@ export default function CustomersPage() {
                           <div className="flex items-center text-sm">
                             <MapPin className="h-3 w-3 mr-1.5 text-muted-foreground" />
                             {customer.branch}
+                          </div>
+                        )
+                        : <span className="text-muted-foreground text-sm">-</span>}
+                    </TableCell>
+                    <TableCell className="max-w-[220px]">
+                      {(customer as { address?: string | null }).address
+                        ? (
+                          <div className="flex items-start text-sm text-muted-foreground gap-1.5">
+                            <MapPin className="h-3 w-3 mt-0.5 shrink-0 text-emerald-600" />
+                            <span className="truncate" title={(customer as { address?: string | null }).address ?? ""}>
+                              {(customer as { address?: string | null }).address}
+                            </span>
                           </div>
                         )
                         : <span className="text-muted-foreground text-sm">-</span>}
@@ -519,16 +537,22 @@ function CreateCustomerDialog({
       phone: "",
       branch: "",
       address: "",
-      tags: "",
+      tags: [],
       notes: "",
       prescriptionNotes: "",
     },
   });
 
+  // Pull existing customer tags so the multi-select can suggest them
+  const { data: existingCustomers } = useListCustomers({});
+  const knownTags = React.useMemo(() => {
+    const set = new Set<string>();
+    existingCustomers?.forEach((c) => c.tags?.forEach((t) => t && set.add(t)));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [existingCustomers]);
+
   const onSubmit = (values: z.infer<typeof createCustomerSchema>) => {
-    const tagsArray = values.tags
-      ? values.tags.split(",").map((t) => t.trim()).filter(Boolean)
-      : [];
+    const tagsArray = (values.tags ?? []).map((t) => t.trim()).filter(Boolean);
 
     createMut.mutate(
       // address is a new field on the customer schema not yet in the
@@ -633,9 +657,13 @@ function CreateCustomerDialog({
                 name="tags"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tags (comma separated)</FormLabel>
+                    <FormLabel>Tags</FormLabel>
                     <FormControl>
-                      <Input placeholder="VIP, Diabetic, Delivery..." {...field} />
+                      <TagsMultiSelect
+                        value={field.value ?? []}
+                        onChange={field.onChange}
+                        options={knownTags}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -714,6 +742,128 @@ function CreateCustomerDialog({
         </Form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tags multi-select — pick from existing customer tags or add a new one.
+// ---------------------------------------------------------------------------
+function TagsMultiSelect({
+  value,
+  onChange,
+  options,
+}: {
+  value: string[];
+  onChange: (v: string[]) => void;
+  options: string[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  const toggle = (tag: string) => {
+    if (value.includes(tag)) onChange(value.filter((t) => t !== tag));
+    else onChange([...value, tag]);
+  };
+
+  const addNew = () => {
+    const t = draft.trim();
+    if (!t) return;
+    if (!value.includes(t)) onChange([...value, t]);
+    setDraft("");
+  };
+
+  const filtered = options.filter(
+    (o) => !draft || o.toLowerCase().includes(draft.toLowerCase()),
+  );
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          className="w-full justify-between font-normal h-auto min-h-10 py-2"
+          data-testid="tags-multiselect-trigger"
+        >
+          <div className="flex flex-wrap gap-1 items-center">
+            {value.length === 0
+              ? <span className="text-muted-foreground">Select tags...</span>
+              : value.map((tag) => (
+                <Badge key={tag} variant="secondary" className="font-normal text-xs gap-1">
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggle(tag);
+                    }}
+                    className="hover:text-destructive"
+                  >
+                    <XIcon className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+          </div>
+          <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start">
+        <div className="p-2 border-b border-border">
+          <div className="flex gap-1.5">
+            <Input
+              placeholder="Search or add new tag"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addNew();
+                }
+              }}
+              className="h-8 text-sm"
+              data-testid="tags-multiselect-search"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="h-8"
+              onClick={addNew}
+              disabled={!draft.trim()}
+            >
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+        <ScrollArea className="max-h-56">
+          <div className="p-1">
+            {filtered.length === 0
+              ? (
+                <p className="text-xs text-muted-foreground p-3 text-center">
+                  No tags yet. Type above to add one.
+                </p>
+              )
+              : filtered.map((tag) => {
+                const checked = value.includes(tag);
+                return (
+                  <label
+                    key={tag}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent cursor-pointer text-sm"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => toggle(tag)}
+                    />
+                    <span className="flex-1">{tag}</span>
+                    {checked && <Check className="h-3.5 w-3.5 text-primary" />}
+                  </label>
+                );
+              })}
+          </div>
+        </ScrollArea>
+      </PopoverContent>
+    </Popover>
   );
 }
 

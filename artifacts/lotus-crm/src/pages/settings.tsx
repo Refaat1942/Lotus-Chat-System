@@ -31,7 +31,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -48,63 +47,91 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
+type SettingsSection = {
+  value: string;
+  label: string;
+  group: string;
+  icon: React.ComponentType<{ className?: string }>;
+  Component: React.ComponentType;
+};
+
+const SETTINGS_SECTIONS: SettingsSection[] = [
+  { value: "users",                   group: "Team",          label: "Users & Roles",       icon: Users,         Component: UsersSettings },
+  { value: "permissions",             group: "Team",          label: "Permissions",         icon: Lock,          Component: PermissionsSettings },
+  { value: "tags",                    group: "Workflow",      label: "Conversation Tags",   icon: TagIcon,       Component: TagsSettings },
+  { value: "replies",                 group: "Workflow",      label: "Quick Replies",       icon: MessageSquare, Component: QuickRepliesSettings },
+  { value: "distribution",            group: "Workflow",      label: "Chat Distribution",   icon: Sliders,       Component: ChatDistributionSettings },
+  { value: "chat-reason-categories",  group: "Reasons",       label: "Reason Categories",   icon: FolderOpen,    Component: ChatReasonCategoriesSettings },
+  { value: "chat-reasons",            group: "Reasons",       label: "Chat Reasons",        icon: MessageCircle, Component: ChatReasonsSettings },
+  { value: "not-ready",               group: "Reasons",       label: "Not Ready Reasons",   icon: Coffee,        Component: NotReadyReasonsSettings },
+  { value: "branding",                group: "Appearance",    label: "Branding",            icon: Palette,       Component: BrandingSettings },
+];
+
+const SETTINGS_GROUPS = ["Team", "Workflow", "Reasons", "Appearance"] as const;
+
 export default function SettingsPage() {
+  const [active, setActive] = React.useState<string>("users");
+  const Active = SETTINGS_SECTIONS.find((s) => s.value === active) ?? SETTINGS_SECTIONS[0];
+  const ActiveComponent = Active.Component;
+  const ActiveIcon = Active.icon;
+
   return (
-    <div className="flex-1 space-y-6 p-8 overflow-y-auto bg-background">
-      <div>
+    <div className="flex-1 flex flex-col min-h-0 bg-background">
+      <div className="px-8 pt-8 pb-4 border-b border-border/60 shrink-0">
         <h2 className="text-3xl font-bold tracking-tight">System Settings</h2>
         <p className="text-muted-foreground">Manage agents, workflow tags, and quick replies.</p>
       </div>
 
-      <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="bg-card border border-border">
-          <TabsTrigger value="users" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><Users className="h-4 w-4 mr-2" /> Users & Roles</TabsTrigger>
-          <TabsTrigger value="tags" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><TagIcon className="h-4 w-4 mr-2" /> Conversation Tags</TabsTrigger>
-          <TabsTrigger value="replies" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><MessageSquare className="h-4 w-4 mr-2" /> Quick Replies</TabsTrigger>
-          <TabsTrigger value="distribution" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><Sliders className="h-4 w-4 mr-2" /> Chat Distribution</TabsTrigger>
-          <TabsTrigger value="branding" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><Palette className="h-4 w-4 mr-2" /> Branding</TabsTrigger>
-          <TabsTrigger value="permissions" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><Lock className="h-4 w-4 mr-2" /> Permissions</TabsTrigger>
-          <TabsTrigger value="chat-reason-categories" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><FolderOpen className="h-4 w-4 mr-2" /> Reason Categories</TabsTrigger>
-          <TabsTrigger value="chat-reasons" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><MessageCircle className="h-4 w-4 mr-2" /> Chat Reasons</TabsTrigger>
-          <TabsTrigger value="not-ready" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"><Coffee className="h-4 w-4 mr-2" /> Not Ready</TabsTrigger>
-        </TabsList>
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-0 min-h-0">
+        {/* Sidebar nav (vertical, grouped — no horizontal cramming) */}
+        <aside className="lg:border-r border-border/60 bg-muted/20 lg:overflow-y-auto p-4 lg:p-5 space-y-5 shrink-0">
+          {SETTINGS_GROUPS.map((group) => {
+            const items = SETTINGS_SECTIONS.filter((s) => s.group === group);
+            if (items.length === 0) return null;
+            return (
+              <div key={group}>
+                <p className="px-2 mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {group}
+                </p>
+                <div className="space-y-1">
+                  {items.map((s) => {
+                    const Icon = s.icon;
+                    const isActive = s.value === active;
+                    return (
+                      <button
+                        key={s.value}
+                        type="button"
+                        onClick={() => setActive(s.value)}
+                        data-testid={`settings-tab-${s.value}`}
+                        className={
+                          "w-full text-left flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors " +
+                          (isActive
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-foreground/80 hover:bg-accent hover:text-foreground")
+                        }
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{s.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </aside>
 
-        <TabsContent value="users" className="space-y-6 m-0">
-          <UsersSettings />
-        </TabsContent>
-
-        <TabsContent value="tags" className="space-y-6 m-0">
-          <TagsSettings />
-        </TabsContent>
-
-        <TabsContent value="replies" className="space-y-6 m-0">
-          <QuickRepliesSettings />
-        </TabsContent>
-
-        <TabsContent value="distribution" className="space-y-6 m-0">
-          <ChatDistributionSettings />
-        </TabsContent>
-
-        <TabsContent value="branding" className="space-y-6 m-0">
-          <BrandingSettings />
-        </TabsContent>
-
-        <TabsContent value="permissions" className="space-y-6 m-0">
-          <PermissionsSettings />
-        </TabsContent>
-
-        <TabsContent value="chat-reason-categories" className="space-y-6 m-0">
-          <ChatReasonCategoriesSettings />
-        </TabsContent>
-
-        <TabsContent value="chat-reasons" className="space-y-6 m-0">
-          <ChatReasonsSettings />
-        </TabsContent>
-
-        <TabsContent value="not-ready" className="space-y-6 m-0">
-          <NotReadyReasonsSettings />
-        </TabsContent>
-      </Tabs>
+        {/* Active section content (this is the only scrolling region) */}
+        <main className="overflow-y-auto p-6 lg:p-8 min-h-0">
+          <div className="mb-5 flex items-center gap-2">
+            <ActiveIcon className="h-5 w-5 text-primary" />
+            <h3 className="text-xl font-semibold">{Active.label}</h3>
+          </div>
+          <div className="space-y-6 max-w-5xl">
+            <ActiveComponent />
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
