@@ -1,0 +1,347 @@
+You are a world-class senior software architect, enterprise ERP engineer, AI systems developer, and elite UI/UX designer.
+
+I already have an existing GitHub project called:
+
+# Marketing-Hub
+
+I want you to USE the existing project architecture, structure, logic, components, patterns, and workflows from that repository as the base foundation.
+
+Then create a NEW upgraded enterprise platform called:
+
+# Global Task Manager
+
+IMPORTANT:
+
+* Clone and rebuild the existing Marketing-Hub project structure professionally.
+* Reuse all useful architecture patterns and scalable logic.
+* Improve the entire system with cleaner architecture and more advanced enterprise features.
+* Remove unnecessary modules related only to camera rental and photography studio management if they are not useful for task and operations management.
+* Keep and improve all modules related to:
+
+  * CRM
+  * Task Management
+  * Operations
+  * Teams
+  * HR
+  * Reporting
+  * AI
+  * Notifications
+  * Workflow automation
+  * Social media management
+  * Business operations
+  * Analytics
+  * Productivity systems
+
+NEW PROJECT NAME:
+
+# Global Task Manager
+
+NEW GITHUB REPOSITORY NAME:
+
+# Global-Task-Manager
+
+CORE IDEA:
+The system should become a world-class enterprise operations platform focused on:
+
+* Advanced Task Management
+* Team Collaboration
+* CRM
+* Business Operations
+* Productivity
+* Workflow Automation
+* AI Business Assistance
+* Reporting & Analytics
+* Enterprise Management
+
+IMPORTANT REQUIREMENTS:
+
+* Full Arabic + English support.
+* Arabic RTL support with premium Arabic typography.
+* English LTR support.
+* Instant language switching.
+* Premium futuristic UI/UX.
+* Luxury dashboard design.
+* Smooth animations and transitions.
+* Enterprise-grade experience.
+
+TECH STACK:
+Backend:
+
+* Python
+* FastAPI preferred
+* PostgreSQL
+* SQLAlchemy
+* Redis
+* Celery
+* JWT Authentication
+* WebSockets
+* Async architecture
+
+Frontend:
+
+* React or Next.js
+* TailwindCSS
+* Framer Motion
+* Modern reusable component architecture
+* Real-time dashboards
+
+Infrastructure:
+
+* Docker
+* Docker Compose
+* Nginx
+* GitHub Actions
+* CI/CD
+* Hostinger VPS deployment
+
+UI/UX STYLE:
+Inspired by:
+
+* ClickUp
+* Monday.com
+* Notion
+* Linear
+* Asana
+* HubSpot
+* Jira
+* Stripe Dashboard
+
+Visual Style:
+
+* Glassmorphism
+* Dark Mode + Light Mode
+* Emerald Green + Black + Dark Gray
+* Premium gradients
+* Elegant shadows
+* Modern cards
+* Smooth loading animations
+* Beautiful Arabic UI
+* Futuristic widgets
+
+CORE MODULES:
+
+1. Enterprise Smart Dashboard
+
+* Real-time analytics
+* KPI monitoring
+* Team activity
+* Revenue analytics
+* Task statistics
+* Performance overview
+* Smart widgets
+* Notifications center
+* Calendar system
+* Live charts
+
+2. Advanced Task Management System
+
+* Kanban boards
+* Gantt charts
+* Sprint management
+* Agile workflows
+* Task assignment
+* Subtasks
+* Priorities
+* Recurring tasks
+* Dependencies
+* Time tracking
+* Team collaboration
+* Comments
+* Mentions
+* Attachments
+* Smart reminders
+* AI productivity suggestions
+
+3. CRM & Client Management
+
+* Leads management
+* Client profiles
+* Sales pipeline
+* Contracts
+* Client activity history
+* Notes & attachments
+* WhatsApp integration
+* Email integration
+* Automated follow-ups
+
+4. Workflow Automation Engine
+
+* Automated workflows
+* Trigger-based automation
+* Approval workflows
+* Status automation
+* Smart notifications
+* Task automation
+* AI-powered automation rules
+
+5. Team Collaboration System
+
+* Team chat
+* Workspace management
+* Departments
+* Shared dashboards
+* Activity feeds
+* Collaboration boards
+
+6. HR & Employee Management
+
+* Attendance
+* Payroll
+* Leave requests
+* Performance reviews
+* Employee KPIs
+* Contracts
+* Departments management
+
+7. Financial & Operations System
+
+* Expenses
+* Revenue tracking
+* Budgets
+* Financial reports
+* Operational analytics
+* Profit & loss
+* Cash flow
+
+8. Social Media & Marketing Management
+
+* Content calendar
+* Campaign management
+* Scheduled posts
+* Performance analytics
+* Approval system
+* Marketing reports
+
+9. AI Business Intelligence System
+
+* AI-generated reports
+* AI analytics
+* Smart predictions
+* AI recommendations
+* Productivity analysis
+* Performance forecasting
+* AI business assistant
+* AI task prioritization
+
+10. Advanced Reporting & Analytics Engine
+    Create EXTREMELY advanced reports for EVERY module.
+
+Reports must include:
+
+* Executive dashboards
+* Daily reports
+* Weekly reports
+* Monthly reports
+* Annual reports
+* Financial reports
+* Productivity reports
+* Team performance reports
+* Task completion analytics
+* Delayed tasks reports
+* CRM reports
+* Operations reports
+* Marketing analytics
+* HR analytics
+* Custom reports
+
+Charts & Analytics:
+
+* Pie charts
+* Bar charts
+* Line charts
+* Heatmaps
+* Forecasting charts
+* KPI dashboards
+* Drill-down analytics
+* AI insights
+
+Export Options:
+
+* PDF
+* Excel
+* CSV
+
+11. Notification Center
+
+* Real-time notifications
+* Email notifications
+* WhatsApp notifications
+* Push notifications
+* Alerts center
+
+12. System Administration
+
+* Roles & permissions
+* User management
+* Branding customization
+* Theme customization
+* Security settings
+* Backup system
+* Audit logs
+* Activity monitoring
+
+DEVELOPMENT REQUIREMENTS:
+
+* Rebuild the existing Marketing-Hub project professionally.
+* Improve architecture quality.
+* Use Clean Architecture.
+* Use SOLID principles.
+* Use scalable modular design.
+* Build reusable enterprise components.
+* Production-ready code only.
+* Enterprise security best practices.
+* API-first architecture.
+* High performance and optimized queries.
+
+IMPORTANT:
+REMOVE:
+
+* Camera rental logic
+* Photography studio booking modules
+* Unnecessary media production inventory systems
+
+ADD:
+
+* Enterprise workflow automation
+* Agile project management
+* Sprint systems
+* Advanced analytics
+* AI business intelligence
+* Enterprise collaboration tools
+* Smart reporting engine
+* Advanced operations tracking
+* AI assistant modules
+
+DELIVERABLES:
+
+1. Full enterprise architecture
+2. Folder structure
+3. Database schema
+4. Backend APIs
+5. Frontend architecture
+6. UI/UX design system
+7. Authentication system
+8. AI systems architecture
+9. Reporting engine
+10. Deployment guide
+11. Docker setup
+12. CI/CD setup
+13. GitHub repository structure
+14. Multi-language system
+15. Security architecture
+16. Enterprise reusable component system
+
+IMPORTANT DEVELOPMENT FLOW:
+
+1. Analyze and rebuild the existing Marketing-Hub project
+2. Improve architecture
+3. Build scalable backend
+4. Build advanced frontend
+5. Create premium UI/UX
+6. Build reporting engine
+7. Build AI systems
+8. Configure deployment
+9. Optimize performance
+10. Generate production-ready enterprise system
+
+The final result must feel like a billion-dollar enterprise SaaS platform built by elite engineers.
