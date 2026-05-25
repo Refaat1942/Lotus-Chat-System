@@ -28,7 +28,7 @@ export function TopBar() {
   const { data: notReadyReasons } = useNotReadyReasons();
   const updateAvailability = useUpdateMyAvailability();
 
-  const companyName = branding?.companyName ?? "Lotus Pharmacies";
+  const companyName = branding?.companyName ?? "Fratelanza Chating System";
 
   const isReady = availability?.isReady ?? true;
   const currentReason = notReadyReasons?.find((r) => r.id === availability?.notReadyReasonId);

@@ -1,16 +1,16 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: lotus_postgres
+    container_name: fratelanza_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-lotus}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lotus_dev_password_change_me}
-      POSTGRES_DB: ${POSTGRES_DB:-lotus}
+      POSTGRES_USER: ${POSTGRES_USER:-fratelanza}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fratelanza_dev_password_change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-fratelanza}
     volumes:
-      - lotus_db_data:/var/lib/postgresql/data
+      - fratelanza_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lotus} -d ${POSTGRES_DB:-lotus}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fratelanza} -d ${POSTGRES_DB:-fratelanza}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -21,7 +21,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-    container_name: lotus_api
+    container_name: fratelanza_api
     restart: unless-stopped
     depends_on:
       postgres:
@@ -29,7 +29,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 8080
-      DATABASE_URL: postgres://${POSTGRES_USER:-lotus}:${POSTGRES_PASSWORD:-lotus_dev_password_change_me}@postgres:5432/${POSTGRES_DB:-lotus}
+      DATABASE_URL: postgres://${POSTGRES_USER:-fratelanza}:${POSTGRES_PASSWORD:-fratelanza_dev_password_change_me}@postgres:5432/${POSTGRES_DB:-fratelanza}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required - set it in .env}
       RUN_SEED: ${RUN_SEED:-true}
     networks:
@@ -39,7 +39,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile.web
-    container_name: lotus_web
+    container_name: fratelanza_web
     restart: unless-stopped
     depends_on:
       - api
@@ -49,7 +49,7 @@ services:
       - lotus_net
 
 volumes:
-  lotus_db_data:
+  fratelanza_db_data:
 
 networks:
   lotus_net:

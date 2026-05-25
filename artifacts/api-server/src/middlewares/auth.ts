@@ -14,7 +14,7 @@ if (!JWT_SECRET_RAW) {
   process.stderr.write("[WARN] JWT_SECRET is not set — using insecure development secret. Set JWT_SECRET in .env for consistent sessions.\n");
 }
 
-export const JWT_SECRET = JWT_SECRET_RAW ?? "dev-only-lotus-crm-secret-not-for-production";
+export const JWT_SECRET = JWT_SECRET_RAW ?? "dev-only-secret-not-for-production";
 
 export interface AuthRequest extends Request {
   user?: typeof usersTable.$inferSelect;

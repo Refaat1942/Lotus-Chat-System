@@ -819,7 +819,7 @@ function BrandingSettings() {
         logoUrl?: string | null;
         slaMinutes?: number;
       };
-      setCompanyName(s.companyName ?? "Lotus Pharmacies");
+      setCompanyName(s.companyName ?? "Fratelanza Chating System");
       setLogoUrl(s.logoUrl ?? null);
       setSlaMinutes(s.slaMinutes ?? 15);
       setDirty(false);
@@ -941,7 +941,7 @@ function BrandingSettings() {
                     setCompanyName(e.target.value);
                     setDirty(true);
                   }}
-                  placeholder="Lotus Pharmacies"
+                  placeholder="Fratelanza Chating System"
                   maxLength={80}
                   className="h-10"
                   data-testid="input-company-name"
@@ -997,7 +997,7 @@ function BrandingSettings() {
               </div>
             )}
             <span className="font-bold text-lg tracking-tight truncate">
-              {companyName || "Lotus Pharmacies"}
+              {companyName || "Fratelanza Chating System"}
             </span>
           </div>
         </CardContent>

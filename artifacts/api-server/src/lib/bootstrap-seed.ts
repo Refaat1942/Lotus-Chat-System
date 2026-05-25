@@ -24,12 +24,12 @@ import {
 import { logger } from "./logger";
 
 const USERS = [
-  ["layla@lotuspharmacies.com", "Layla Hassan",   "admin", "admin123"],
-  ["omar@lotuspharmacies.com",  "Omar Khalil",    "admin", "admin123"],
-  ["sara@lotuspharmacies.com",  "Sara Ahmed",     "agent", "agent123"],
-  ["youssef@lotuspharmacies.com","Youssef Nabil", "agent", "agent123"],
-  ["hana@lotuspharmacies.com",  "Hana Mostafa",   "agent", "agent123"],
-  ["kareem@lotuspharmacies.com","Kareem Farouk",  "agent", "agent123"],
+  ["layla@fratelanza.com", "Layla Hassan",   "admin", "admin123"],
+  ["omar@fratelanza.com",  "Omar Khalil",    "admin", "admin123"],
+  ["sara@fratelanza.com",  "Sara Ahmed",     "agent", "agent123"],
+  ["youssef@fratelanza.com","Youssef Nabil", "agent", "agent123"],
+  ["hana@fratelanza.com",  "Hana Mostafa",   "agent", "agent123"],
+  ["kareem@fratelanza.com","Kareem Farouk",  "agent", "agent123"],
 ] as const;
 
 const TAGS = [
@@ -42,14 +42,14 @@ const TAGS = [
 ] as const;
 
 const REPLIES = [
-  ["Greeting",          "Hello! Welcome to Lotus Pharmacies. How can I help you today?"],
+  ["Greeting",          "Hello! Welcome to Fratelanza Chating System. How can I help you today?"],
   ["Out of stock",      "I'm sorry, that item is currently out of stock. We expect a restock within 2–3 business days."],
   ["Delivery times",    "We deliver between 9 AM and 9 PM. Same-day delivery is available for orders placed before 6 PM."],
   ["Insurance accepted","We accept most major insurance providers. Please share your card and I'll verify coverage."],
   ["Prescription pickup","Your prescription is ready for pickup. Please bring a valid ID."],
   ["Refill reminder",   "Hi! This is a friendly reminder that it's time to refill your prescription."],
   ["Payment options",   "We accept cash, credit/debit cards, and digital wallets. Insurance copays are calculated at checkout."],
-  ["Thank you",         "Thank you for choosing Lotus Pharmacies. We're here whenever you need us."],
+  ["Thank you",         "Thank you for choosing Fratelanza Chating System. We're here whenever you need us."],
 ] as const;
 
 const CUSTOMER_NAMES = [
@@ -185,7 +185,7 @@ export async function bootstrapSeed(): Promise<void> {
       .select({ id: usersTable.id, email: usersTable.email })
       .from(usersTable);
     const agentIdByEmail = Object.fromEntries(
-      agentRows.filter((r) => r.email !== "layla@lotuspharmacies.com" && r.email !== "omar@lotuspharmacies.com").map((r) => [r.email, r.id]),
+      agentRows.filter((r) => r.email !== "layla@fratelanza.com" && r.email !== "omar@fratelanza.com").map((r) => [r.email, r.id]),
     );
     const agentEmails = Object.keys(agentIdByEmail);
 

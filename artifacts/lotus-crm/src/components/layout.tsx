@@ -2,12 +2,11 @@ import React from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard,
-  MessageSquare,
+  Sparkles,
   Users,
   FileBarChart,
   Settings,
   LogOut,
-  Sparkles,
   Inbox,
   Megaphone,
 } from "lucide-react";
@@ -48,22 +47,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <div className="flex h-screen w-full overflow-hidden bg-background">
         <Sidebar className="border-r border-border">
-          <SidebarHeader className="flex items-center px-4 py-5 border-b border-border">
-            <div className="flex items-center gap-2.5 min-w-0">
+          <SidebarHeader className="flex items-center px-4 py-5 border-b border-border bg-gradient-to-r from-primary/5 via-background to-accent/5">
+            <div className="flex items-center gap-3 min-w-0 w-full">
               {branding?.logoUrl ? (
                 <img
                   src={branding.logoUrl}
                   alt={branding.companyName}
-                  className="h-8 w-8 rounded-md object-cover ring-1 ring-border/50"
+                  className="h-10 w-10 rounded-lg object-cover ring-2 ring-primary/30 shadow-md flex-shrink-0"
                 />
               ) : (
-                <div className="bg-primary rounded-md p-1.5 flex items-center justify-center shadow-sm">
-                  <MessageSquare className="h-5 w-5 text-primary-foreground" />
+                <div className="bg-gradient-to-br from-primary to-accent rounded-lg p-2 flex items-center justify-center shadow-lg border border-primary/20 flex-shrink-0">
+                  <Sparkles className="h-5 w-5 text-primary-foreground animate-pulse" />
                 </div>
               )}
-              <span className="font-bold text-lg text-foreground tracking-tight truncate">
-                {branding?.companyName ?? "Lotus Pharmacies"}
-              </span>
+              <div className="flex-1 min-w-0">
+                <span className="font-bold text-base bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent truncate block">
+                  {branding?.companyName ?? "Fratelanza"}
+                </span>
+              </div>
             </div>
           </SidebarHeader>
 
