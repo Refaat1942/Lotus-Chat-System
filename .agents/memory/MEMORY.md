@@ -1,0 +1,2 @@
+- [Artifact package rename breaks Replit build/dev](artifact-package-name-alignment.md) — renaming an artifact's package name silently breaks the workflow + .replit deploy build + Dockerfiles that filter by @workspace/<name>.
+- [Tool output masks brand names](tool-output-brand-masking.md) — bash/rg output can replace proper nouns (whatsapp→n, lotus→ln); use the `read` tool for exact strings.
