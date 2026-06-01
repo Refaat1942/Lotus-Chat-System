@@ -49,5 +49,9 @@ Thumbs.db
 .local/
 
 # Environment variables (sensitive)
+.env
 .env.local
 .env*.local
+
+# Visual Studio IDE state
+.vs/
