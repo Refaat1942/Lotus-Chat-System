@@ -55,3 +55,6 @@ Thumbs.db
 
 # Visual Studio IDE state
 .vs/
+
+# Leaked credential docs (do not commit secrets)
+WHATSAPP_CREDENTIALS.md
