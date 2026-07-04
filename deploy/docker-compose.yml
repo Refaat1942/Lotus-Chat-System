@@ -1,3 +1,5 @@
+name: ${COMPOSE_PROJECT_NAME:-fratelanza}
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -15,7 +17,7 @@ services:
       timeout: 5s
       retries: 10
     networks:
-      - lotus_net
+      - fratelanza_net
 
   api:
     build:
@@ -33,7 +35,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required - set it in .env}
       RUN_SEED: ${RUN_SEED:-true}
     networks:
-      - lotus_net
+      - fratelanza_net
 
   web:
     build:
@@ -46,11 +48,11 @@ services:
     ports:
       - "${WEB_PORT:-8090}:80"
     networks:
-      - lotus_net
+      - fratelanza_net
 
 volumes:
   fratelanza_db_data:
 
 networks:
-  lotus_net:
+  fratelanza_net:
     driver: bridge
