@@ -19,7 +19,7 @@ Keep Lotus running. Install Fratelanza as a **second** stack.
 | Compose project | `lotus` (typical)        | `fratelanza`                  |
 | Containers      | `lotus_postgres`, etc.   | `fratelanza_postgres`, etc.   |
 | DB volume       | `lotus_db_data`          | `fratelanza_db_data`          |
-| Public port     | `8090`                   | `8091` (or any free port)     |
+| Public port     | `8090`                   | `18000`                       |
 | Database        | `lotus`                  | `fratelanza`                  |
 
 ### Steps on the VPS
@@ -40,7 +40,7 @@ Set these in `deploy/.env`:
 
 ```env
 COMPOSE_PROJECT_NAME=fratelanza
-WEB_PORT=8091
+WEB_PORT=18000
 POSTGRES_USER=fratelanza
 POSTGRES_PASSWORD=<new-strong-password>
 POSTGRES_DB=fratelanza
@@ -57,19 +57,19 @@ docker compose --env-file .env up -d --build
 
 # 4. Verify — Lotus should still work on 8090, Fratelanza on 8091
 curl -s http://localhost:8090/api/healthz   # existing Lotus
-curl -s http://localhost:8091/api/healthz   # new Fratelanza
+curl -s http://localhost:18000/api/healthz  # new Fratelanza
 docker ps --format "table {{.Names}}\t{{.Ports}}\t{{.Status}}"
 ```
 
 Access:
 
 - Lotus: `http://<vps-ip>:8090`
-- Fratelanza: `http://<vps-ip>:8091`
+- Fratelanza: `http://<vps-ip>:18000`
 
 Open firewall for **8091** if needed:
 
 ```bash
-ufw allow 8091/tcp
+ufw allow 18000/tcp
 ```
 
 ---
@@ -147,7 +147,7 @@ Set `RUN_SEED=false` in `.env` after cutover so demo seed does not run again.
 
 ## Quick decision guide
 
-- **Testing the new build while Lotus stays live** → Path A (8091, new folder)
+- **Testing the new build while Lotus stays live** → Path A (18000, new folder)
 - **Fratelanza becomes production on the same domain/port** → Path B (backup → stop Lotus → deploy → optional DB restore)
 - **Not sure yet** → Path A first, then Path B when ready
 
@@ -157,7 +157,7 @@ Set `RUN_SEED=false` in `.env` after cutover so demo seed does not run again.
 
 1. Set `RUN_SEED=false` in `deploy/.env`
 2. Change default admin passwords in Settings
-3. Point your domain/reverse proxy to the port you chose (8090 or 8091)
+3. Point your domain/reverse proxy to the port you chose (18000 or 8090)
 4. Remove old Lotus stack when no longer needed:
 
 ```bash
