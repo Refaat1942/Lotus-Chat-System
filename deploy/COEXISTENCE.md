@@ -55,7 +55,7 @@ Use **new** passwords and JWT — do not copy Lotus values.
 cd deploy
 docker compose --env-file .env up -d --build
 
-# 4. Verify — Lotus should still work on 8090, Fratelanza on 8091
+# 4. Verify — Lotus should still work on 8090, Fratelanza on 18000
 curl -s http://localhost:8090/api/healthz   # existing Lotus
 curl -s http://localhost:18000/api/healthz  # new Fratelanza
 docker ps --format "table {{.Names}}\t{{.Ports}}\t{{.Status}}"
