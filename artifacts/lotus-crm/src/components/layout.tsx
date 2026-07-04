@@ -29,6 +29,7 @@ import {
 import { AvailabilityToggle } from "@/components/availability-toggle";
 import { useBranding } from "@/lib/api-extra";
 import { useInsights } from "@/lib/api-extra";
+import { useMyPermissions } from "@/lib/api-extra";
 import { TopBar } from "@/components/top-bar";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -36,6 +37,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const { data: branding } = useBranding();
   const { data: insights } = useInsights();
+  const { data: perms } = useMyPermissions();
 
   const channelCounts = insights?.channelCounts ?? {};
   const urgentCount = insights?.summary.urgentCount ?? 0;
@@ -62,7 +64,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               )}
               <div className="flex-1 min-w-0">
                 <span className="font-bold text-base bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent truncate block">
-                  {branding?.companyName ?? "Fratelanza"}
+                  {branding?.companyName ?? "Fratelanza Chat Management System"}
                 </span>
               </div>
             </div>
@@ -80,6 +82,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </SidebarMenuItem>
 
               {/* Inbox parent + channel sub-items */}
+              {perms?.canViewChats !== false && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/chat")}>
                   <Link href="/chat" className="flex items-center gap-3 transition-colors">
@@ -129,7 +132,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   </SidebarMenuSubItem>
                 </SidebarMenuSub>
               </SidebarMenuItem>
+              )}
 
+              {perms?.canViewChats !== false && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/insights")}>
                   <Link href="/insights" className="flex items-center gap-3 transition-colors">
@@ -143,7 +148,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              )}
 
+              {perms?.canManageCustomers !== false && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/customers")}>
                   <Link href="/customers" className="flex items-center gap-3 transition-colors">
@@ -152,7 +159,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              )}
 
+              {perms?.canViewReports && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/reports")}>
                   <Link href="/reports" className="flex items-center gap-3 transition-colors">
@@ -161,6 +170,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              )}
 
               {user?.role === "admin" && (
                 <SidebarMenuItem>

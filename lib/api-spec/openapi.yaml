@@ -347,7 +347,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [open, resolved, pending]
+            enum: [open, completed, pending]
         - name: agentId
           in: query
           schema:
@@ -1243,7 +1243,7 @@ components:
           nullable: true
         status:
           type: string
-          enum: [open, resolved, pending]
+          enum: [open, completed, pending]
         tags:
           type: array
           items:
@@ -1300,7 +1300,7 @@ components:
             type: string
         status:
           type: string
-          enum: [open, resolved, pending]
+          enum: [open, completed, pending]
         assignedAgentId:
           type: integer
           nullable: true

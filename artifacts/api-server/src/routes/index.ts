@@ -16,15 +16,23 @@ import chatReasonCategoriesRouter from "./chat-reason-categories";
 import chatReasonsRouter from "./chat-reasons";
 import notReadyReasonsRouter from "./not-ready-reasons";
 import meRouter from "./me";
+import webhooksRouter from "./webhooks";
+import uploadsRouter from "./uploads";
+import customerAiRouter from "./customer-ai";
+import userPermissionsRouter from "./user-permissions";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(webhooksRouter);
 router.use(authRouter);
+router.use(userPermissionsRouter);
 router.use(usersRouter);
 router.use(customersRouter);
+router.use(customerAiRouter);
 router.use(conversationsRouter);
 router.use(messagesRouter);
+router.use(uploadsRouter);
 router.use(tagsRouter);
 router.use(quickRepliesRouter);
 router.use(analyticsRouter);

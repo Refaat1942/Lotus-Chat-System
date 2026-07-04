@@ -1,12 +1,16 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { campaignsTable, customersTable } from "@workspace/db";
-import { eq, desc, sql } from "drizzle-orm";
+import { campaignsTable, campaignRecipientsTable, customersTable } from "@workspace/db";
+import { eq, desc } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
+import {
+  executeCampaignSend,
+  createCampaignRecipients,
+} from "../lib/campaign-sender";
 
 const router = Router();
 
-router.get("/campaigns", requireAuth, async (_req, res) => {
+router.get("/campaigns", requireAuth, requireAdmin, async (_req, res) => {
   const rows = await db
     .select()
     .from(campaignsTable)
@@ -14,8 +18,26 @@ router.get("/campaigns", requireAuth, async (_req, res) => {
   res.json(rows);
 });
 
+router.get("/campaigns/:id/recipients", requireAuth, requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  const rows = await db
+    .select({
+      id: campaignRecipientsTable.id,
+      customerId: campaignRecipientsTable.customerId,
+      customerName: customersTable.name,
+      phone: customersTable.phone,
+      status: campaignRecipientsTable.status,
+      error: campaignRecipientsTable.error,
+      sentAt: campaignRecipientsTable.sentAt,
+    })
+    .from(campaignRecipientsTable)
+    .innerJoin(customersTable, eq(campaignRecipientsTable.customerId, customersTable.id))
+    .where(eq(campaignRecipientsTable.campaignId, id));
+  res.json(rows);
+});
+
 router.post("/campaigns", requireAuth, requireAdmin, async (req, res) => {
-  const { name, channel, message, audience } = req.body ?? {};
+  const { name, channel, message, audience, customerIds, scheduledAt } = req.body ?? {};
   if (!name || typeof name !== "string" || name.trim().length < 2) {
     res.status(400).json({ error: "name (min 2 chars) is required" });
     return;
@@ -24,8 +46,18 @@ router.post("/campaigns", requireAuth, requireAdmin, async (req, res) => {
     res.status(400).json({ error: "message is required" });
     return;
   }
-  const allowedChannels = ["whatsapp", "messenger", "instagram", "sms"];
+  const allowedChannels = ["whatsapp", "messenger", "instagram", "sms", "email"];
   const ch = allowedChannels.includes(channel) ? channel : "whatsapp";
+  const aud =
+    audience === "selected" && Array.isArray(customerIds) && customerIds.length > 0
+      ? "selected"
+      : "all";
+
+  const scheduleDate =
+    scheduledAt && !Number.isNaN(new Date(scheduledAt).getTime())
+      ? new Date(scheduledAt)
+      : null;
+  const status = scheduleDate && scheduleDate > new Date() ? "scheduled" : "draft";
 
   const [row] = await db
     .insert(campaignsTable)
@@ -33,9 +65,18 @@ router.post("/campaigns", requireAuth, requireAdmin, async (req, res) => {
       name: name.trim(),
       channel: ch,
       message: message.trim(),
-      audience: typeof audience === "string" && audience ? audience : "all",
+      audience: aud,
+      status,
+      scheduledAt: scheduleDate,
+      recipientCount: aud === "selected" ? customerIds.length : 0,
     })
     .returning();
+
+  if (aud === "selected" && Array.isArray(customerIds)) {
+    const ids = customerIds.map(Number).filter((n) => Number.isFinite(n));
+    await createCampaignRecipients(row.id, ids);
+  }
+
   res.status(201).json(row);
 });
 
@@ -49,44 +90,18 @@ router.delete("/campaigns/:id", requireAuth, requireAdmin, async (req, res) => {
   res.status(204).end();
 });
 
-/**
- * "Send" stub — no real provider yet. Marks the campaign as sent and records
- * a synthetic recipient count derived from the customers table so the UI has
- * meaningful numbers to show. Idempotent: re-sending updates sentAt.
- */
-router.post(
-  "/campaigns/:id/send",
-  requireAuth,
-  requireAdmin,
-  async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) {
-      res.status(400).json({ error: "invalid id" });
-      return;
-    }
-    const [{ count } = { count: 0 }] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(customersTable);
-    const [row] = await db
-      .update(campaignsTable)
-      .set({
-        status: "sent",
-        sentAt: new Date(),
-        recipientCount: Number(count) || 0,
-      })
-      .where(eq(campaignsTable.id, id))
-      .returning();
-    if (!row) {
-      res.status(404).json({ error: "Not found" });
-      return;
-    }
-    res.json({
-      ...row,
-      providerStatus: "stubbed",
-      message:
-        "Campaign queued (stub). Connect a provider to deliver real messages.",
-    });
-  },
-);
+router.post("/campaigns/:id/send", requireAuth, requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) {
+    res.status(400).json({ error: "invalid id" });
+    return;
+  }
+  try {
+    const result = await executeCampaignSend(id);
+    res.json(result);
+  } catch (err) {
+    res.status(404).json({ error: err instanceof Error ? err.message : "Send failed" });
+  }
+});
 
 export default router;
