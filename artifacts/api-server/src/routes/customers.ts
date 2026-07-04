@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { customersTable, conversationsTable } from "@workspace/db";
 import { eq, ilike, sql, and, or, SQL } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
+import { requirePermission } from "../middlewares/permissions";
 
 const router = Router();
 
@@ -35,7 +36,7 @@ router.get("/customers", requireAuth, async (req, res) => {
   res.json(customers);
 });
 
-router.post("/customers", requireAuth, async (req, res) => {
+router.post("/customers", requireAuth, requirePermission("canManageCustomers"), async (req, res) => {
   const { name, phone, branch, address, tags, notes, prescriptionNotes } = req.body;
   // Stronger validation — names need to be non-empty, phones need to look
   // like a phone (7+ digits, allow + - space ()). Prevents junk records.
@@ -73,7 +74,7 @@ router.get("/customers/:id", requireAuth, async (req, res) => {
   res.json(customer);
 });
 
-router.put("/customers/:id", requireAuth, async (req, res) => {
+router.put("/customers/:id", requireAuth, requirePermission("canManageCustomers"), async (req, res) => {
   const id = Number(req.params.id);
   const { name, phone, branch, address, tags, notes, prescriptionNotes } = req.body;
   const updates: Record<string, unknown> = {};
@@ -89,7 +90,7 @@ router.put("/customers/:id", requireAuth, async (req, res) => {
   res.json(customer);
 });
 
-router.delete("/customers/:id", requireAuth, async (req, res) => {
+router.delete("/customers/:id", requireAuth, requirePermission("canManageCustomers"), async (req, res) => {
   const id = Number(req.params.id);
   await db.delete(customersTable).where(eq(customersTable.id, id));
   res.status(204).send();
@@ -98,7 +99,7 @@ router.delete("/customers/:id", requireAuth, async (req, res) => {
 // Block / unblock a customer. Blocking prevents agents from sending new
 // outbound messages to any of the customer's conversations (see messages.ts).
 // Internal notes are still allowed so staff can record context.
-router.post("/customers/:id/block", requireAuth, async (req, res) => {
+router.post("/customers/:id/block", requireAuth, requirePermission("canManageCustomers"), async (req, res) => {
   const id = Number(req.params.id);
   const reason = typeof req.body?.reason === "string"
     ? req.body.reason.trim().slice(0, 500) || null
@@ -111,7 +112,7 @@ router.post("/customers/:id/block", requireAuth, async (req, res) => {
   res.json(customer);
 });
 
-router.post("/customers/:id/unblock", requireAuth, async (req, res) => {
+router.post("/customers/:id/unblock", requireAuth, requirePermission("canManageCustomers"), async (req, res) => {
   const id = Number(req.params.id);
   const [customer] = await db.update(customersTable)
     .set({ isBlocked: false, blockedReason: null, blockedAt: null })

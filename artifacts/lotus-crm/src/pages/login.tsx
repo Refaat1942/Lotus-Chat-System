@@ -59,7 +59,7 @@ export default function LoginPage() {
     );
   };
 
-  const companyName = branding?.companyName ?? "Fratelanza";
+  const companyName = branding?.companyName ?? "Fratelanza Chat Management System";
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background px-4 relative overflow-hidden">

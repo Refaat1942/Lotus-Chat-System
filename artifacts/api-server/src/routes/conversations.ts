@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { conversationsTable, customersTable, usersTable } from "@workspace/db";
 import { eq, and, ilike, desc, sql } from "drizzle-orm";
 import { requireAuth, AuthRequest } from "../middlewares/auth";
+import { requirePermission } from "../middlewares/permissions";
 import { tryAutoAssign, drainQueue } from "../lib/assignment";
 import type { Server as IOServer } from "socket.io";
 
@@ -49,7 +50,7 @@ async function getConversationWithRelations(id: number) {
   return rows[0] ?? null;
 }
 
-router.get("/conversations", requireAuth, async (req: AuthRequest, res) => {
+router.get("/conversations", requireAuth, requirePermission("canViewChats"), async (req: AuthRequest, res) => {
   const { status, agentId, tag, search } = req.query as Record<string, string>;
 
   const baseQuery = db.select({
@@ -105,7 +106,7 @@ router.get("/conversations", requireAuth, async (req: AuthRequest, res) => {
   res.json(rows);
 });
 
-router.post("/conversations", requireAuth, async (req, res) => {
+router.post("/conversations", requireAuth, requirePermission("canSendMessages"), async (req, res) => {
   const { customerId, tags, assignedAgentId } = req.body;
   if (!customerId) { res.status(400).json({ error: "customerId required" }); return; }
   const [conv] = await db.insert(conversationsTable).values({
@@ -122,7 +123,7 @@ router.post("/conversations", requireAuth, async (req, res) => {
   res.status(201).json(full);
 });
 
-router.get("/conversations/:id", requireAuth, async (req: AuthRequest, res) => {
+router.get("/conversations/:id", requireAuth, requirePermission("canViewChats"), async (req: AuthRequest, res) => {
   const id = Number(req.params.id);
   const conv = await getConversationWithRelations(id);
   if (!conv) { res.status(404).json({ error: "Not found" }); return; }
@@ -134,7 +135,7 @@ router.get("/conversations/:id", requireAuth, async (req: AuthRequest, res) => {
   res.json(conv);
 });
 
-router.put("/conversations/:id", requireAuth, async (req: AuthRequest, res) => {
+router.put("/conversations/:id", requireAuth, requirePermission("canSendMessages"), async (req: AuthRequest, res) => {
   const id = Number(req.params.id);
   const existing = await getConversationWithRelations(id);
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
@@ -159,7 +160,7 @@ router.put("/conversations/:id", requireAuth, async (req: AuthRequest, res) => {
   res.json(full);
 });
 
-router.patch("/conversations/:id", requireAuth, async (req: AuthRequest, res) => {
+router.patch("/conversations/:id", requireAuth, requirePermission("canSendMessages"), async (req: AuthRequest, res) => {
   const id = Number(req.params.id);
   const existing = await getConversationWithRelations(id);
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
@@ -198,7 +199,7 @@ router.patch("/conversations/:id", requireAuth, async (req: AuthRequest, res) =>
   res.json(full);
 });
 
-router.post("/conversations/:id/assign", requireAuth, async (req: AuthRequest, res) => {
+router.post("/conversations/:id/assign", requireAuth, requirePermission("canSendMessages"), async (req: AuthRequest, res) => {
   const id = Number(req.params.id);
   const { agentId } = req.body;
   const existing = await getConversationWithRelations(id);
@@ -223,7 +224,7 @@ router.post("/conversations/:id/assign", requireAuth, async (req: AuthRequest, r
   res.json(full);
 });
 
-router.post("/conversations/:id/resolve", requireAuth, async (req: AuthRequest, res) => {
+router.post("/conversations/:id/resolve", requireAuth, requirePermission("canSendMessages"), async (req: AuthRequest, res) => {
   const id = Number(req.params.id);
   const existing = await getConversationWithRelations(id);
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }

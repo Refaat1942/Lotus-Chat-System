@@ -6,6 +6,7 @@ import { setBaseUrl } from "@workspace/api-client-react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { useMyPermissions, type EffectivePermissions } from "@/lib/api-extra";
 import { AppLayout } from "@/components/layout";
 
 // Pages
@@ -76,6 +77,29 @@ const AdminRoute = ({ component: Component }: RouteProps) => {
   );
 };
 
+// Permission-gated route
+const PermissionRoute = ({
+  component: Component,
+  permission,
+  fallback = "/dashboard",
+}: RouteProps & { permission: keyof EffectivePermissions; fallback?: string }) => {
+  const { user, isLoading } = useAuth();
+  const { data: perms, isLoading: permsLoading } = useMyPermissions();
+
+  if (isLoading || permsLoading) {
+    return <div className="h-screen w-full flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
+  }
+
+  if (!user) return <Redirect to="/login" />;
+  if (!perms?.[permission]) return <Redirect to={fallback} />;
+
+  return (
+    <AppLayout>
+      <Component />
+    </AppLayout>
+  );
+};
+
 function Router() {
   const { user } = useAuth();
 
@@ -90,10 +114,10 @@ function Router() {
 
       {/* Protected Routes */}
       <Route path="/dashboard">{() => <ProtectedRoute component={DashboardPage} />}</Route>
-      <Route path="/chat">{() => <ProtectedRoute component={ChatPage} />}</Route>
-      <Route path="/customers">{() => <ProtectedRoute component={CustomersPage} />}</Route>
-      <Route path="/reports">{() => <ProtectedRoute component={ReportsPage} />}</Route>
-      <Route path="/insights">{() => <ProtectedRoute component={InsightsPage} />}</Route>
+      <Route path="/chat">{() => <PermissionRoute component={ChatPage} permission="canViewChats" />}</Route>
+      <Route path="/customers">{() => <PermissionRoute component={CustomersPage} permission="canManageCustomers" fallback="/dashboard" />}</Route>
+      <Route path="/reports">{() => <PermissionRoute component={ReportsPage} permission="canViewReports" />}</Route>
+      <Route path="/insights">{() => <PermissionRoute component={InsightsPage} permission="canViewChats" />}</Route>
       <Route path="/marketing">{() => <AdminRoute component={MarketingPage} />}</Route>
 
       {/* Admin Route */}
@@ -113,7 +137,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} forcedTheme="dark">
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
         <TooltipProvider>
           <AuthProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>

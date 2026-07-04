@@ -10,3 +10,5 @@ export * from "./role-permissions";
 export * from "./chat-reason-categories";
 export * from "./chat-reasons";
 export * from "./not-ready-reasons";
+export * from "./user-permissions";
+export * from "./campaign-recipients";

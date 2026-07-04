@@ -8,6 +8,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { bootstrapSeed } from "./lib/bootstrap-seed";
 import { JWT_SECRET } from "./middlewares/auth";
+import { processDueScheduledCampaigns } from "./lib/campaign-sender";
 
 interface AuthedSocket extends Socket {
   data: { userId: number; role: "admin" | "agent" };
@@ -143,4 +144,9 @@ io.on("connection", (rawSocket) => {
 httpServer.listen(port, async () => {
   logger.info({ port }, "Server listening");
   await bootstrapSeed();
+  setInterval(() => {
+    void processDueScheduledCampaigns().catch((err) =>
+      logger.error({ err }, "Scheduled campaign processor failed"),
+    );
+  }, 60_000);
 });

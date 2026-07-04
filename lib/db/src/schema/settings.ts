@@ -14,7 +14,7 @@ export const settingsTable = pgTable("settings", {
     .notNull()
     .default("least_busy"),
   // Branding — admin-configurable
-  companyName: text("company_name").notNull().default("Fratelanza Chating System"),
+  companyName: text("company_name").notNull().default("Fratelanza Chat Management System"),
   logoUrl: text("logo_url"),
   // SLA threshold (in minutes) used for chat-monitoring "Late" status
   slaMinutes: integer("sla_minutes").notNull().default(15),

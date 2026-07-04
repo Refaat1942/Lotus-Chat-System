@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { messagesTable, conversationsTable, customersTable } from "@workspace/db";
 import { eq, asc } from "drizzle-orm";
 import { requireAuth, AuthRequest } from "../middlewares/auth";
+import { requirePermission } from "../middlewares/permissions";
 import type { Server as IOServer } from "socket.io";
 
 const router = Router();
@@ -17,7 +18,7 @@ async function canAccessConversation(userId: number, role: string, convId: numbe
   return !!conv && conv.assignedAgentId === userId;
 }
 
-router.get("/conversations/:id/messages", requireAuth, async (req: AuthRequest, res) => {
+router.get("/conversations/:id/messages", requireAuth, requirePermission("canViewChats"), async (req: AuthRequest, res) => {
   const convId = Number(req.params.id);
   const allowed = await canAccessConversation(req.user!.id, req.user!.role, convId);
   if (!allowed) { res.status(403).json({ error: "Forbidden" }); return; }
@@ -28,7 +29,7 @@ router.get("/conversations/:id/messages", requireAuth, async (req: AuthRequest, 
   res.json(messages);
 });
 
-router.post("/conversations/:id/messages", requireAuth, async (req: AuthRequest, res) => {
+router.post("/conversations/:id/messages", requireAuth, requirePermission("canSendMessages"), async (req: AuthRequest, res) => {
   const convId = Number(req.params.id);
   const allowed = await canAccessConversation(req.user!.id, req.user!.role, convId);
   if (!allowed) { res.status(403).json({ error: "Forbidden" }); return; }

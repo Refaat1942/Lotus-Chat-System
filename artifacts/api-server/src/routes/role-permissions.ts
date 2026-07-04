@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { rolePermissionsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
+import { invalidatePermissionCache } from "../lib/permissions";
 
 const router = Router();
 
@@ -49,6 +50,7 @@ router.put(
         .insert(rolePermissionsTable)
         .values({ role, ...updates, updatedAt: new Date() })
         .returning();
+      invalidatePermissionCache();
       res.json(row);
       return;
     }
@@ -58,6 +60,7 @@ router.put(
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(rolePermissionsTable.role, role))
       .returning();
+    invalidatePermissionCache();
     res.json(row);
   },
 );

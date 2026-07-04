@@ -60,7 +60,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FaWhatsapp, FaFacebookMessenger, FaInstagram, FaSms } from "react-icons/fa";
 import { Globe } from "lucide-react";
 import { useSearch } from "wouter";
-import { useInsights, useChatReasons } from "@/lib/api-extra";
+import { useInsights, useChatReasons, useUploadAttachment, useMyPermissions } from "@/lib/api-extra";
 
 type ConvWithChannel = {
   id: number;
@@ -275,9 +275,14 @@ export default function ChatPage() {
 
 function ChatCenter({ conversationId, currentUserId, currentUserName, message, setMessage }: { conversationId: number, currentUserId?: number, currentUserName?: string, message: string, setMessage: React.Dispatch<React.SetStateAction<string>> }) {
   const [isNote, setIsNote] = useState(false);
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const uploadMut = useUploadAttachment();
+  const { data: perms } = useMyPermissions();
+  const canSend = perms?.canSendMessages !== false;
 
   const { data: conv, isLoading: convLoading } = useGetConversation(conversationId, {
     query: { enabled: !!conversationId, queryKey: getGetConversationQueryKey(conversationId) }
@@ -316,19 +321,46 @@ function ChatCenter({ conversationId, currentUserId, currentUserName, message, s
   }, [messages]);
 
   const handleSend = () => {
-    if (!message.trim()) return;
+    if (!message.trim() && attachments.length === 0) return;
+    if (!canSend) {
+      toast({ title: "You do not have permission to send messages", variant: "destructive" });
+      return;
+    }
     sendMessageMut.mutate(
-      { id: conversationId, data: { body: message, isNote } },
+      { id: conversationId, data: { body: message || "(attachment)", isNote, attachments } },
       {
         onSuccess: () => {
           setMessage("");
           setIsNote(false);
+          setAttachments([]);
           queryClient.invalidateQueries({ queryKey: getListMessagesQueryKey(conversationId) });
           queryClient.invalidateQueries({ queryKey: getListConversationsQueryKey() });
         },
         onError: () => toast({ title: "Failed to send message", variant: "destructive" })
       }
     );
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 400_000) {
+      toast({ title: "File too large (max 400KB)", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      uploadMut.mutate(
+        { dataUrl, filename: file.name },
+        {
+          onSuccess: (res) => setAttachments((prev) => [...prev, res.url]),
+          onError: () => toast({ title: "Upload failed", variant: "destructive" }),
+        },
+      );
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -497,16 +529,20 @@ function ChatCenter({ conversationId, currentUserId, currentUserName, message, s
                   <Clock className="h-3 w-3 mr-1.5" />
                   Note
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => fileInputRef.current?.click()} disabled={!canSend}>
                   <Paperclip className="h-4 w-4" />
                 </Button>
+                <input ref={fileInputRef} type="file" accept="image/*,.pdf,.txt" className="hidden" onChange={handleFileSelect} />
+                {attachments.length > 0 && (
+                  <span className="text-[10px] text-muted-foreground">{attachments.length} file(s)</span>
+                )}
                 <ChannelButtons />
               </div>
               <Button 
                 size="sm" 
                 className="h-8 px-4" 
                 onClick={handleSend} 
-                disabled={!message.trim() || sendMessageMut.isPending}
+                disabled={(!message.trim() && attachments.length === 0) || sendMessageMut.isPending || !canSend}
                 data-testid="btn-send-message"
               >
                 {sendMessageMut.isPending ? <Skeleton className="h-4 w-4" /> : <Send className="h-4 w-4 mr-2" />}

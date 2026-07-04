@@ -819,7 +819,7 @@ function BrandingSettings() {
         logoUrl?: string | null;
         slaMinutes?: number;
       };
-      setCompanyName(s.companyName ?? "Fratelanza Chating System");
+      setCompanyName(s.companyName ?? "Fratelanza Chat Management System");
       setLogoUrl(s.logoUrl ?? null);
       setSlaMinutes(s.slaMinutes ?? 15);
       setDirty(false);
@@ -941,7 +941,7 @@ function BrandingSettings() {
                     setCompanyName(e.target.value);
                     setDirty(true);
                   }}
-                  placeholder="Fratelanza Chating System"
+                  placeholder="Fratelanza Chat Management System"
                   maxLength={80}
                   className="h-10"
                   data-testid="input-company-name"
@@ -997,7 +997,7 @@ function BrandingSettings() {
               </div>
             )}
             <span className="font-bold text-lg tracking-tight truncate">
-              {companyName || "Fratelanza Chating System"}
+              {companyName || "Fratelanza Chat Management System"}
             </span>
           </div>
         </CardContent>

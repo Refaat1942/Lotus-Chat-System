@@ -8,8 +8,11 @@ import {
 } from "@workspace/db";
 import { eq, and, gte, sql, count } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
+import { requirePermission } from "../middlewares/permissions";
 
 const router = Router();
+
+router.use(requireAuth, requirePermission("canViewReports"));
 
 // ----- helpers -----
 type DateRange = { from: Date; to: Date };
@@ -52,7 +55,7 @@ function rowsToCsv(rows: Record<string, unknown>[]): string {
 // Existing endpoints (kept for backward compatibility)
 // =====================================================
 
-router.get("/analytics/summary", requireAuth, async (_req, res) => {
+router.get("/analytics/summary", async (_req, res) => {
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -94,7 +97,7 @@ router.get("/analytics/summary", requireAuth, async (_req, res) => {
   });
 });
 
-router.get("/analytics/chats-over-time", requireAuth, async (_req, res) => {
+router.get("/analytics/chats-over-time", async (_req, res) => {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -112,13 +115,13 @@ router.get("/analytics/chats-over-time", requireAuth, async (_req, res) => {
   })));
 });
 
-router.get("/analytics/agent-performance", requireAuth, async (_req, res) => {
+router.get("/analytics/agent-performance", async (_req, res) => {
   const result = await db.execute(sql`
     SELECT
       u.id as agent_id,
       u.name as agent_name,
       COUNT(DISTINCT c.id) as total_handled,
-      COUNT(DISTINCT CASE WHEN c.status = 'resolved' THEN c.id END) as resolved,
+      COUNT(DISTINCT CASE WHEN c.status = 'completed' THEN c.id END) as resolved,
       COUNT(DISTINCT CASE WHEN c.status = 'open' THEN c.id END) as active_chats,
       AVG(CASE
         WHEN m.created_at IS NOT NULL
@@ -151,7 +154,7 @@ router.get("/analytics/agent-performance", requireAuth, async (_req, res) => {
   })));
 });
 
-router.get("/analytics/recent-activity", requireAuth, async (_req, res) => {
+router.get("/analytics/recent-activity", async (_req, res) => {
   const result = await db.execute(sql`
     (SELECT
       CONCAT('conv-', c.id) as id,
@@ -169,14 +172,14 @@ router.get("/analytics/recent-activity", requireAuth, async (_req, res) => {
     (SELECT
       CONCAT('res-', c.id) as id,
       'conversation_resolved' as type,
-      CONCAT('Conversation with ', cu.name, ' resolved') as description,
+      CONCAT('Conversation with ', cu.name, ' completed') as description,
       u.name as agent_name,
       cu.name as customer_name,
       c.resolved_at as created_at
     FROM conversations c
     JOIN customers cu ON c.customer_id = cu.id
     LEFT JOIN users u ON u.id = c.assigned_agent_id
-    WHERE c.status = 'resolved' AND c.resolved_at IS NOT NULL
+    WHERE c.status = 'completed' AND c.resolved_at IS NOT NULL
     ORDER BY c.resolved_at DESC LIMIT 5)
 
     UNION ALL
@@ -214,7 +217,7 @@ router.get("/analytics/recent-activity", requireAuth, async (_req, res) => {
 // =====================================================
 
 // 1) Real-time overview KPIs (used by KPI cards, refreshes often)
-router.get("/reports/overview", requireAuth, async (_req, res) => {
+router.get("/reports/overview", async (_req, res) => {
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startOfWeek = new Date(now);
@@ -263,7 +266,7 @@ router.get("/reports/overview", requireAuth, async (_req, res) => {
 });
 
 // 2) Chat volume over time, with status breakdown + grouping
-router.get("/reports/chat-volume", requireAuth, async (req, res) => {
+router.get("/reports/chat-volume", async (req, res) => {
   const { from, to } = parseRange(req);
   const groupBy = (req.query.groupBy as string) || "day";
   const trunc = groupBy === "month" ? "month" : groupBy === "week" ? "week" : "day";
@@ -274,7 +277,7 @@ router.get("/reports/chat-volume", requireAuth, async (req, res) => {
       COUNT(*)::int as total,
       COUNT(*) FILTER (WHERE status = 'open')::int as open,
       COUNT(*) FILTER (WHERE status = 'pending')::int as pending,
-      COUNT(*) FILTER (WHERE status = 'resolved')::int as resolved
+      COUNT(*) FILTER (WHERE status = 'completed')::int as resolved
     FROM conversations
     WHERE created_at BETWEEN ${from.toISOString()} AND ${to.toISOString()}
     GROUP BY bucket
@@ -291,7 +294,7 @@ router.get("/reports/chat-volume", requireAuth, async (req, res) => {
 });
 
 // 3) Response-time analytics: distribution + averages + SLA breaches
-router.get("/reports/response-times", requireAuth, async (req, res) => {
+router.get("/reports/response-times", async (req, res) => {
   const { from, to } = parseRange(req);
   const slaMinutes = Number(req.query.slaMinutes ?? 5);
 
@@ -331,7 +334,7 @@ router.get("/reports/response-times", requireAuth, async (req, res) => {
       AVG(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 60) as avg_minutes,
       PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (resolved_at - created_at)) / 60) as p50
     FROM conversations
-    WHERE status = 'resolved'
+    WHERE status = 'completed'
       AND resolved_at IS NOT NULL
       AND created_at BETWEEN ${from.toISOString()} AND ${to.toISOString()}
   `);
@@ -366,7 +369,7 @@ router.get("/reports/response-times", requireAuth, async (req, res) => {
 });
 
 // 4) Customer analytics: top customers, repeat rate, growth
-router.get("/reports/customers", requireAuth, async (req, res) => {
+router.get("/reports/customers", async (req, res) => {
   const { from, to } = parseRange(req);
   const limit = Math.min(Number(req.query.limit ?? 10), 100);
 
@@ -448,14 +451,14 @@ router.get("/reports/customers", requireAuth, async (req, res) => {
 });
 
 // 5) Branch performance
-router.get("/reports/branches", requireAuth, async (req, res) => {
+router.get("/reports/branches", async (req, res) => {
   const { from, to } = parseRange(req);
 
   const result = await db.execute(sql`
     SELECT
       COALESCE(cu.branch, 'Unassigned') as branch,
       COUNT(DISTINCT c.id)::int as conversation_count,
-      COUNT(DISTINCT c.id) FILTER (WHERE c.status = 'resolved')::int as resolved_count,
+      COUNT(DISTINCT c.id) FILTER (WHERE c.status = 'completed')::int as resolved_count,
       COUNT(DISTINCT c.id) FILTER (WHERE c.status = 'open')::int as open_count,
       COUNT(DISTINCT cu.id)::int as customer_count,
       AVG(EXTRACT(EPOCH FROM (m.created_at - c.created_at)) / 60) as avg_response_minutes
@@ -488,7 +491,7 @@ router.get("/reports/branches", requireAuth, async (req, res) => {
 });
 
 // 6) Tag analytics
-router.get("/reports/tags", requireAuth, async (req, res) => {
+router.get("/reports/tags", async (req, res) => {
   const { from, to } = parseRange(req);
 
   // Tag frequency on conversations
@@ -521,7 +524,7 @@ router.get("/reports/tags", requireAuth, async (req, res) => {
 });
 
 // 7) Hourly heatmap (day-of-week × hour)
-router.get("/reports/heatmap", requireAuth, async (req, res) => {
+router.get("/reports/heatmap", async (req, res) => {
   const { from, to } = parseRange(req);
 
   const result = await db.execute(sql`
@@ -548,7 +551,7 @@ router.get("/reports/heatmap", requireAuth, async (req, res) => {
 // =====================================================
 // Unified CSV export
 // =====================================================
-router.get("/reports/export", requireAuth, async (req, res) => {
+router.get("/reports/export", async (req, res) => {
   const type = (req.query.type as string) || "agents";
   const { from, to } = parseRange(req);
 
@@ -561,7 +564,7 @@ router.get("/reports/export", requireAuth, async (req, res) => {
         u.name as "Agent Name",
         u.email as "Email",
         COUNT(DISTINCT c.id)::int as "Total Handled",
-        COUNT(DISTINCT CASE WHEN c.status = 'resolved' THEN c.id END)::int as "Resolved",
+        COUNT(DISTINCT CASE WHEN c.status = 'completed' THEN c.id END)::int as "Resolved",
         COUNT(DISTINCT CASE WHEN c.status = 'open' THEN c.id END)::int as "Active Chats",
         ROUND(AVG(CASE
           WHEN m.created_at IS NOT NULL
@@ -627,7 +630,7 @@ router.get("/reports/export", requireAuth, async (req, res) => {
         COALESCE(cu.branch, 'Unassigned') as "Branch",
         COUNT(DISTINCT cu.id)::int as "Customers",
         COUNT(DISTINCT c.id)::int as "Conversations",
-        COUNT(DISTINCT c.id) FILTER (WHERE c.status = 'resolved')::int as "Resolved",
+        COUNT(DISTINCT c.id) FILTER (WHERE c.status = 'completed')::int as "Resolved",
         COUNT(DISTINCT c.id) FILTER (WHERE c.status = 'open')::int as "Open"
       FROM customers cu
       LEFT JOIN conversations c

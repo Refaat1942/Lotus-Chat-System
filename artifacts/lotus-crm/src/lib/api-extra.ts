@@ -66,10 +66,10 @@ export function useBranding() {
 }
 
 // ---------------------------------------------------------------------------
-// Marketing campaigns (ready-to-connect stub — no real provider)
+// Marketing campaigns
 // ---------------------------------------------------------------------------
-export type CampaignChannel = "whatsapp" | "messenger" | "instagram" | "sms";
-export type CampaignStatus = "draft" | "sent";
+export type CampaignChannel = "whatsapp" | "messenger" | "instagram" | "sms" | "email";
+export type CampaignStatus = "draft" | "scheduled" | "sending" | "sent" | "partial" | "failed";
 
 export interface Campaign {
   id: number;
@@ -79,6 +79,9 @@ export interface Campaign {
   audience: string;
   status: CampaignStatus;
   recipientCount: number;
+  sentCount: number;
+  failedCount: number;
+  scheduledAt: string | null;
   createdAt: string;
   sentAt: string | null;
 }
@@ -88,6 +91,18 @@ export interface CreateCampaignInput {
   channel: CampaignChannel;
   message: string;
   audience?: string;
+  customerIds?: number[];
+  scheduledAt?: string | null;
+}
+
+export interface CampaignRecipient {
+  id: number;
+  customerId: number;
+  customerName: string;
+  phone: string;
+  status: "pending" | "sent" | "failed";
+  error: string | null;
+  sentAt: string | null;
 }
 
 const CAMPAIGNS_KEY = ["/api/campaigns"] as const;
@@ -132,6 +147,15 @@ export function useSendCampaign() {
   });
 }
 
+export function useCampaignRecipients(campaignId: number | null) {
+  return useQuery({
+    queryKey: ["/api/campaigns", campaignId, "recipients"],
+    queryFn: () =>
+      customFetch<CampaignRecipient[]>(`/api/campaigns/${campaignId}/recipients`),
+    enabled: campaignId != null,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Role permissions (5 fixed booleans per role)
 // ---------------------------------------------------------------------------
@@ -145,6 +169,90 @@ export interface RolePermissions {
   canManageCustomers: boolean;
   canManageSettings: boolean;
   updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Effective permissions (role + per-user overrides)
+// ---------------------------------------------------------------------------
+export interface EffectivePermissions {
+  canViewChats: boolean;
+  canSendMessages: boolean;
+  canViewReports: boolean;
+  canManageCustomers: boolean;
+  canManageSettings: boolean;
+}
+
+export function useMyPermissions() {
+  return useQuery({
+    queryKey: ["/api/me/permissions"],
+    queryFn: () => customFetch<EffectivePermissions>("/api/me/permissions"),
+    staleTime: 30_000,
+  });
+}
+
+export function useUploadAttachment() {
+  return useMutation({
+    mutationFn: ({ dataUrl, filename }: { dataUrl: string; filename: string }) =>
+      customFetch<{ url: string; filename: string }>("/api/uploads", {
+        method: "POST",
+        body: JSON.stringify({ dataUrl, filename }),
+      }),
+  });
+}
+
+export interface CustomerAiBrief {
+  source: "ai" | "deterministic";
+  profile: string;
+  clinical: string;
+  communication: string;
+  nextAction: string;
+  risk: string;
+  generatedAt: string;
+}
+
+export function useCustomerAiBrief(customerId: number | null) {
+  return useMutation({
+    mutationFn: () =>
+      customFetch<CustomerAiBrief>(`/api/customers/${customerId}/ai-brief`, {
+        method: "POST",
+        body: "{}",
+      }),
+  });
+}
+
+export function useUserPermissionOverrides(userId: number | null, role: RoleName) {
+  return useQuery({
+    queryKey: ["/api/users", userId, "permissions", role],
+    queryFn: () =>
+      customFetch<{
+        userId: number;
+        role: RoleName;
+        effective: EffectivePermissions;
+        override: Record<string, boolean | null> | null;
+      }>(`/api/users/${userId}/permissions?role=${role}`),
+    enabled: userId != null,
+  });
+}
+
+export function useUpdateUserPermissions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      userId,
+      data,
+    }: {
+      userId: number;
+      data: Partial<Record<keyof EffectivePermissions, boolean | null>>;
+    }) =>
+      customFetch(`/api/users/${userId}/permissions`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["/api/users", vars.userId, "permissions"] });
+      qc.invalidateQueries({ queryKey: ["/api/me/permissions"] });
+    },
+  });
 }
 
 const ROLE_PERMS_KEY = ["/api/role-permissions"] as const;
@@ -210,10 +318,11 @@ export function useUnblockCustomer() {
 }
 
 /**
- * Convenience: returns the permissions for a given role, with safe defaults
- * while the request is loading or before the row exists.
+ * Convenience: returns role-level permissions (legacy). Prefer useMyPermissions().
  */
 export function usePermissionsFor(role: RoleName | undefined) {
+  const { data: myPerms } = useMyPermissions();
+  if (myPerms) return myPerms;
   const { data } = useRolePermissions();
   const row = data?.find((r) => r.role === role);
   return {

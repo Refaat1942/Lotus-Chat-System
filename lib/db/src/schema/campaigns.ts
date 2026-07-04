@@ -3,28 +3,28 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 /**
- * Marketing campaigns — "ready to connect" placeholder.
- *
- * Campaigns are stored as drafts. Sending is a no-op stub today: when the
- * admin clicks "Send", we mark status='sent' and record sentAt + a synthetic
- * recipientCount, but no real provider call is made. This keeps the UI and
- * data model in place so a real WhatsApp/SMS/Messenger provider can be wired
- * up later without changing the schema or the front-end.
+ * Marketing campaigns — supports draft, scheduling, and provider-ready send.
+ * Real delivery requires provider env vars; without them send runs in stub mode.
  */
 export const campaignsTable = pgTable("campaigns", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   channel: text("channel", {
-    enum: ["whatsapp", "messenger", "instagram", "sms"],
+    enum: ["whatsapp", "messenger", "instagram", "sms", "email"],
   })
     .notNull()
     .default("whatsapp"),
   message: text("message").notNull(),
   audience: text("audience").notNull().default("all"),
-  status: text("status", { enum: ["draft", "sent"] })
+  status: text("status", {
+    enum: ["draft", "scheduled", "sending", "sent", "partial", "failed"],
+  })
     .notNull()
     .default("draft"),
   recipientCount: integer("recipient_count").notNull().default(0),
+  sentCount: integer("sent_count").notNull().default(0),
+  failedCount: integer("failed_count").notNull().default(0),
+  scheduledAt: timestamp("scheduled_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   sentAt: timestamp("sent_at"),
 });

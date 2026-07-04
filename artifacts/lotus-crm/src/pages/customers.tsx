@@ -15,9 +15,9 @@ import { format, parseISO, formatDistanceToNow } from "date-fns";
 import {
   Search, Plus, Phone, MapPin, FileText, User,
   MessageSquare, Clock, ChevronRight, ArrowLeft, Ban, ShieldCheck,
-  Check, ChevronsUpDown, X as XIcon,
+  Check, ChevronsUpDown, X as XIcon, Sparkles, RefreshCw,
 } from "lucide-react";
-import { useBlockCustomer, useUnblockCustomer } from "@/lib/api-extra";
+import { useBlockCustomer, useUnblockCustomer, useCustomerAiBrief } from "@/lib/api-extra";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -252,6 +252,8 @@ function CustomerDetailView({
   const { data: conversations, isLoading: convsLoading } = useGetCustomerConversations(customerId);
   const blockMut = useBlockCustomer();
   const unblockMut = useUnblockCustomer();
+  const aiBriefMut = useCustomerAiBrief(customerId);
+  const [aiBrief, setAiBrief] = React.useState<import("@/lib/api-extra").CustomerAiBrief | null>(null);
   const isBlocked = !!(customer as { isBlocked?: boolean } | undefined)?.isBlocked;
   const blockedReason = (customer as { blockedReason?: string | null } | undefined)?.blockedReason;
   const handleToggleBlock = () => {
@@ -356,6 +358,42 @@ function CustomerDetailView({
           </CardContent>
         </Card>
       )}
+
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            AI Contact Brief
+          </CardTitle>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8"
+            disabled={aiBriefMut.isPending}
+            onClick={() =>
+              aiBriefMut.mutate(undefined, {
+                onSuccess: (data) => setAiBrief(data),
+                onError: () => toast({ title: "Could not generate brief", variant: "destructive" }),
+              })
+            }
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${aiBriefMut.isPending ? "animate-spin" : ""}`} />
+            {aiBrief ? "Refresh" : "Generate"}
+          </Button>
+        </CardHeader>
+        {aiBrief && (
+          <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+            {(["profile", "clinical", "communication", "nextAction", "risk"] as const).map((key) => (
+              <div key={key} className="space-y-1">
+                <p className="text-xs font-semibold uppercase text-muted-foreground tracking-wide">
+                  {key === "nextAction" ? "Next action" : key}
+                </p>
+                <p>{aiBrief[key]}</p>
+              </div>
+            ))}
+          </CardContent>
+        )}
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Profile card */}
