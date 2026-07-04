@@ -66,7 +66,7 @@ Access:
 - Lotus: `http://<vps-ip>:8090`
 - Fratelanza: `http://<vps-ip>:18000`
 
-Open firewall for **8091** if needed:
+Open firewall for **18000** if needed:
 
 ```bash
 ufw allow 18000/tcp
