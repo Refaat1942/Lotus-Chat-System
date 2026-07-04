@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useBranding } from "@/lib/api-extra";
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  email: z.string().trim().min(2, "Username is required"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -121,11 +121,12 @@ export default function LoginPage() {
             <CardContent className="pt-6">
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="font-medium text-foreground">Email Address</Label>
+                  <Label htmlFor="email" className="font-medium text-foreground">Username</Label>
                   <Input
                     id="email"
-                    type="email"
-                    placeholder="you@fratelanza.com"
+                    type="text"
+                    placeholder="admin"
+                    autoComplete="username"
                     {...form.register("email")}
                     className={`h-11 bg-background/50 border-border/30 transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 ${
                       form.formState.errors.email ? "border-destructive" : ""
