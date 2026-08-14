@@ -111,6 +111,33 @@ function verifyWebhookSecret(req: { headers: Record<string, unknown> }): boolean
   return req.headers["x-webhook-secret"] === secret;
 }
 
+router.get("/webhooks/:provider", (req, res) => {
+  const provider = req.params.provider as Provider;
+
+  if (provider !== "whatsapp") {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  const expectedToken = process.env.WHATSAPP_VERIFY_TOKEN;
+
+  if (
+    mode === "subscribe" &&
+    expectedToken &&
+    token === expectedToken &&
+    typeof challenge === "string"
+  ) {
+    res.status(200).send(challenge);
+    return;
+  }
+
+  res.status(403).json({ error: "Forbidden" });
+});
+
 router.post("/webhooks/:provider", async (req, res) => {
   if (!verifyWebhookSecret(req)) {
     res.status(401).json({ error: "Invalid webhook secret" });
