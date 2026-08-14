@@ -18,7 +18,11 @@ export const HealthCheckResponse = zod.object({
  * @summary Login
  */
 export const LoginBody = zod.object({
-  email: zod.string().email(),
+  email: zod
+    .string()
+    .describe(
+      "Login username (stored in the email column for legacy compatibility)",
+    ),
   password: zod.string(),
 });
 

@@ -235,14 +235,14 @@ function PermissionsSettings() {
 // -----------------------------------------------------------------------------
 const createUserSchema = z.object({
   name: z.string().min(2, "Name required"),
-  email: z.string().email("Valid email required"),
-  password: z.string().min(6, "Password too short"),
+  email: z.string().trim().min(2, "Username required"),
+  password: z.string().min(4, "Password too short"),
   role: z.enum(["admin", "agent"]),
 });
 
 const editUserSchema = z.object({
   name: z.string().min(2, "Name required"),
-  email: z.string().email("Valid email required"),
+  email: z.string().trim().min(2, "Username required"),
   role: z.enum(["admin", "agent"]),
   password: z.string().optional(),
 });
@@ -306,8 +306,8 @@ function EditUserDialog({
             )}/>
             <FormField control={form.control} name="email" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs">Email</FormLabel>
-                <FormControl><Input type="email" className="h-9 text-sm" {...field} /></FormControl>
+                <FormLabel className="text-xs">Username</FormLabel>
+                <FormControl><Input type="text" className="h-9 text-sm" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}/>
@@ -392,7 +392,7 @@ function UsersSettings() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>Username</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
@@ -443,8 +443,8 @@ function UsersSettings() {
               )}/>
               <FormField control={form.control} name="email" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs">Email</FormLabel>
-                  <FormControl><Input type="email" className="h-9 text-sm" {...field} /></FormControl>
+                  <FormLabel className="text-xs">Username</FormLabel>
+                  <FormControl><Input type="text" className="h-9 text-sm" {...field} /></FormControl>
                 </FormItem>
               )}/>
               <FormField control={form.control} name="password" render={({ field }) => (

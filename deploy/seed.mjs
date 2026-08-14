@@ -27,19 +27,21 @@ async function main() {
 
     // -------------------- USERS --------------------
     const users = [
-      ["layla@fratelanza.com",  "Layla Hassan",   "admin", "admin123"],
-      ["omar@fratelanza.com",   "Omar Khalil",    "admin", "admin123"],
-      ["sara@fratelanza.com",   "Sara Ahmed",     "agent", "agent123"],
-      ["youssef@fratelanza.com","Youssef Nabil",  "agent", "agent123"],
-      ["hana@fratelanza.com",   "Hana Mostafa",   "agent", "agent123"],
-      ["kareem@fratelanza.com", "Kareem Farouk",  "agent", "agent123"],
+      ["admin",   "Administrator", "admin", "admin"],
+      ["sara",    "Sara Ahmed",    "agent", "agent"],
+      ["youssef", "Youssef Nabil", "agent", "agent"],
+      ["hana",    "Hana Mostafa",  "agent", "agent"],
+      ["kareem",  "Kareem Farouk", "agent", "agent"],
     ];
-    for (const [email, name, role, pwd] of users) {
+    for (const [username, name, role, pwd] of users) {
       await client.query(
         `INSERT INTO users (email, password_hash, name, role)
          VALUES ($1, crypt($2, gen_salt('bf', 10)), $3, $4)
-         ON CONFLICT (email) DO NOTHING`,
-        [email, pwd, name, role],
+         ON CONFLICT (email) DO UPDATE SET
+           password_hash = EXCLUDED.password_hash,
+           name = EXCLUDED.name,
+           role = EXCLUDED.role`,
+        [username, pwd, name, role],
       );
     }
 

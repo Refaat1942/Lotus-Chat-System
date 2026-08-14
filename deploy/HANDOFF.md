@@ -21,10 +21,9 @@ under `/api/` (including the WebSocket upgrade for Socket.io) to
 `lotus_api:8080`. The API talks to Postgres on the internal
 `lotus_net` Docker network.
 
-There are **no external webhooks, no third-party APIs, and no
-Replit-runtime dependencies**. WhatsApp / Messenger / Instagram are
-referenced in the UI as channel labels only — there is no live
-integration with Meta yet.
+There are **no Replit-runtime dependencies**. **Meta WhatsApp Cloud API**
+integration is built in (see §10). Messenger / Instagram legacy generic
+webhooks remain available; Meta Messenger/Instagram are not wired yet.
 
 ---
 
@@ -73,10 +72,27 @@ Copy `deploy/.env.example` → `deploy/.env` and fill in:
 | `JWT_SECRET` | **Required.** Signs login tokens. Min 32 chars. | `openssl rand -hex 48` |
 | `RUN_SEED` | Run demo seed on first boot | `true` (then set `false` later) |
 | `FORCE_RESEED` | One-shot wipe + reseed of demo data (preserves users) | leave unset |
-| `WEB_PORT` | Host port nginx is exposed on | `8090` |
+| `WEB_PORT` | Host port nginx is exposed on | `15600` (Fratelanza) / `8090` (Lotus) |
 
-That's the **complete** env list. There are no API keys, no webhook
-secrets, no SMTP, no S3.
+**Optional — Meta WhatsApp Cloud API** (required for live WhatsApp):
+
+| Var | Purpose |
+|-----|---------|
+| `WHATSAPP_VERIFY_TOKEN` | String you choose; must match Meta Developer Console webhook verify token |
+| `WHATSAPP_ACCESS_TOKEN` | System user permanent token with `whatsapp_business_messaging` |
+| `WHATSAPP_PHONE_NUMBER_ID` | From Meta → WhatsApp → API Setup |
+| `WHATSAPP_BUSINESS_ACCOUNT_ID` | WhatsApp Business Account (WABA) id |
+| `WHATSAPP_APP_SECRET` | App secret for `X-Hub-Signature-256` validation |
+| `WHATSAPP_GRAPH_API_VERSION` | Graph API version (default `v21.0`) |
+
+**Optional — other messaging:**
+
+| Var | Purpose |
+|-----|---------|
+| `WEBHOOK_SECRET` | Custom header auth for legacy messenger/instagram webhooks only |
+| `MESSAGING_PROVIDER_URL` | Generic campaign send stub |
+
+Do **not** commit `.env` or paste tokens into chat/logs.
 
 ---
 
@@ -208,6 +224,11 @@ DELETE /api/campaigns/:id
 POST   /api/campaigns/:id/send          ⚠ STUB — no real messaging provider
 
 GET    /api/healthz                     (no auth, for monitoring/uptime checks)
+
+GET    /api/webhooks/whatsapp           (Meta verification — no JWT)
+POST   /api/webhooks/whatsapp           (Meta inbound — no JWT, signature validated)
+POST   /api/webhooks/messenger          (legacy generic — optional WEBHOOK_SECRET)
+POST   /api/webhooks/instagram          (legacy generic — optional WEBHOOK_SECRET)
 ```
 
 A live realtime channel runs over **Socket.io** at `/api/socket.io/`
@@ -215,15 +236,65 @@ A live realtime channel runs over **Socket.io** at `/api/socket.io/`
 
 ---
 
-## 10. Webhooks (current state)
+## 10. Meta WhatsApp Cloud API
 
-**There are no inbound webhooks defined in the code.** The CRM does
-not receive WhatsApp / Messenger / Instagram messages — those panels
-display data created in-app. If/when you connect a real provider
-(e.g. WhatsApp Business Cloud API, Meta Messenger, Twilio), the
-webhook receiver will need to be added to
-`artifacts/api-server/src/routes/` and exposed publicly under
-`https://crm.yourcompany.com/api/webhooks/<provider>`.
+### Webhook URL (production)
+
+Meta requires **HTTPS**. Register:
+
+```
+https://<your-domain>/api/webhooks/whatsapp
+```
+
+Example: `https://crm.yourcompany.com/api/webhooks/whatsapp`
+
+**Do not** use bare `http://IP:port` — Meta will reject it.
+
+### Meta Developer Console setup
+
+1. Create/open a Meta App with **WhatsApp** product enabled.
+2. Link your **WhatsApp Business Account** and phone number.
+3. Under **WhatsApp → Configuration → Webhook**:
+   - **Callback URL:** `https://<your-domain>/api/webhooks/whatsapp`
+   - **Verify token:** same value as `WHATSAPP_VERIFY_TOKEN` in `deploy/.env`
+4. Click **Verify and save** (calls `GET /api/webhooks/whatsapp`).
+5. Subscribe to **`messages`** field (includes inbound messages and status updates).
+6. Copy **Phone number ID**, **WABA ID**, generate **System User access token**.
+7. Copy **App Secret** from App Settings → Basic.
+
+Add all values to `deploy/.env` (see §4), then rebuild:
+
+```bash
+cd /opt/fratelanza-crm/deploy
+docker compose up -d --build
+```
+
+### How messages flow
+
+| Direction | Path |
+|-----------|------|
+| Customer → Fratelanza | Meta POST webhook → DB → Socket.io `new_message` |
+| Fratelanza → Customer | Agent sends in UI → `POST /api/conversations/:id/messages` → Meta Graph API |
+| Status updates | Meta POST webhook statuses → DB → Socket.io `message_status` |
+
+Text messages are fully supported. Image/document/audio/video ingestion is structured for future extension.
+
+### Local / staging testing
+
+1. Use **ngrok** or **Cloudflare Tunnel** to expose HTTPS to your local or VPS stack:
+   ```bash
+   ngrok http 15600
+   ```
+2. Set the ngrok HTTPS URL + `/api/webhooks/whatsapp` in Meta Console.
+3. Send a WhatsApp message to your business number from a personal phone.
+4. Confirm it appears in **Inbox → WhatsApp**.
+5. Reply from the UI; confirm delivery on the phone.
+
+### Security notes
+
+- Webhook routes are **not** JWT-protected (Meta cannot use our tokens).
+- POST webhooks validate `X-Hub-Signature-256` when `WHATSAPP_APP_SECRET` is set.
+- Access tokens and app secrets must only live in environment variables.
 
 ---
 

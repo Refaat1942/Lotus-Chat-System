@@ -1,27 +1,27 @@
+name: ${COMPOSE_PROJECT_NAME:-fratelanza-chat}
+
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: fratelanza_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-fratelanza}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fratelanza_dev_password_change_me}
       POSTGRES_DB: ${POSTGRES_DB:-fratelanza}
     volumes:
-      - fratelanza_db_data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fratelanza} -d ${POSTGRES_DB:-fratelanza}"]
       interval: 5s
       timeout: 5s
       retries: 10
     networks:
-      - lotus_net
+      - app_net
 
   api:
     build:
       context: ..
       dockerfile: Dockerfile
-    container_name: fratelanza_api
     restart: unless-stopped
     depends_on:
       postgres:
@@ -32,25 +32,32 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-fratelanza}:${POSTGRES_PASSWORD:-fratelanza_dev_password_change_me}@postgres:5432/${POSTGRES_DB:-fratelanza}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required - set it in .env}
       RUN_SEED: ${RUN_SEED:-true}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_BUSINESS_ACCOUNT_ID: ${WHATSAPP_BUSINESS_ACCOUNT_ID:-}
+      WHATSAPP_APP_SECRET: ${WHATSAPP_APP_SECRET:-}
+      WHATSAPP_GRAPH_API_VERSION: ${WHATSAPP_GRAPH_API_VERSION:-v21.0}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+      MESSAGING_PROVIDER_URL: ${MESSAGING_PROVIDER_URL:-}
     networks:
-      - lotus_net
+      - app_net
 
   web:
     build:
       context: ..
       dockerfile: Dockerfile.web
-    container_name: fratelanza_web
     restart: unless-stopped
     depends_on:
       - api
     ports:
-      - "${WEB_PORT:-8090}:80"
+      - "${WEB_PORT:-15600}:80"
     networks:
-      - lotus_net
+      - app_net
 
 volumes:
-  fratelanza_db_data:
+  db_data:
 
 networks:
-  lotus_net:
+  app_net:
     driver: bridge

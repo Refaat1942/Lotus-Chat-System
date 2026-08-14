@@ -56,6 +56,17 @@ PGPASSWORD="${POSTGRES_PASSWORD:-lotus_dev_password_change_me}" psql \
   -c "INSERT INTO chat_reason_categories (title_en, title_ar) SELECT v.title_en, v.title_ar FROM (VALUES ('Sales', 'مبيعات'), ('Support', 'دعم فني'), ('Clinical', 'سريري'), ('Complaints', 'شكاوى')) AS v(title_en, title_ar) WHERE NOT EXISTS (SELECT 1 FROM chat_reason_categories c WHERE c.title_en = v.title_en);" \
   >/dev/null 2>&1 || echo "(skip — table may not exist yet)"
 
+# ----- 2f. WhatsApp: external message id (Meta wamid) -----
+if [ -f /app/deploy/migrations/001_messages_external_id.sql ]; then
+  echo "==> Applying messages external_id migration..."
+  PGPASSWORD="${POSTGRES_PASSWORD:-lotus_dev_password_change_me}" psql \
+    -h postgres \
+    -U "${POSTGRES_USER:-lotus}" \
+    -d "${POSTGRES_DB:-lotus}" \
+    -f /app/deploy/migrations/001_messages_external_id.sql \
+    >/dev/null 2>&1 || echo "(skip — migration may have already applied)"
+fi
+
 # ----- 3. Seed runs automatically inside the API server on startup -----
 # The api-server has a built-in idempotent bootstrap-seed that creates demo
 # users + tags + customers + conversations on first boot when the DB is empty.

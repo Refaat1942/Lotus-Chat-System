@@ -24,13 +24,36 @@ import {
 import { logger } from "./logger";
 
 const USERS = [
-  ["layla@fratelanza.com", "Layla Hassan",   "admin", "admin123"],
-  ["omar@fratelanza.com",  "Omar Khalil",    "admin", "admin123"],
-  ["sara@fratelanza.com",  "Sara Ahmed",     "agent", "agent123"],
-  ["youssef@fratelanza.com","Youssef Nabil", "agent", "agent123"],
-  ["hana@fratelanza.com",  "Hana Mostafa",   "agent", "agent123"],
-  ["kareem@fratelanza.com","Kareem Farouk",  "agent", "agent123"],
+  ["admin",   "Administrator", "admin", "admin"],
+  ["sara",    "Sara Ahmed",    "agent", "agent"],
+  ["youssef", "Youssef Nabil", "agent", "agent"],
+  ["hana",    "Hana Mostafa",  "agent", "agent"],
+  ["kareem",  "Kareem Farouk", "agent", "agent"],
 ] as const;
+
+const ADMIN_USERNAME = "admin";
+const ADMIN_PASSWORD = "admin";
+
+/** Always ensure the default admin login exists (username: admin, password: admin). */
+async function ensureDefaultAdmin(): Promise<void> {
+  const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 10);
+  await db
+    .insert(usersTable)
+    .values({
+      email: ADMIN_USERNAME,
+      name: "Administrator",
+      role: "admin",
+      passwordHash,
+    })
+    .onConflictDoUpdate({
+      target: usersTable.email,
+      set: {
+        passwordHash,
+        role: "admin",
+        name: "Administrator",
+      },
+    });
+}
 
 const TAGS = [
   ["VIP",            "#FFD700"],
@@ -89,8 +112,11 @@ export async function bootstrapSeed(): Promise<void> {
     // 1) Settings singleton
     await db.insert(settingsTable).values({ id: 1 }).onConflictDoNothing();
 
+    // 1b) Default admin (admin / admin) — always upserted
+    await ensureDefaultAdmin();
+
     // 2) Demo data is NEVER seeded in production unless explicitly enabled.
-    //    Default credentials (admin123 / agent123) would otherwise create
+    //    Default credentials (admin / admin) would otherwise create
     //    trivially guessable admin access on a fresh prod database.
     //    Accept either SEED_DEMO_DATA=true (canonical) or RUN_SEED=true
     //    (used by the docker-compose / Hostinger VPS deploy) as opt-in.
@@ -180,22 +206,22 @@ export async function bootstrapSeed(): Promise<void> {
       customerIds.push(row.id);
     }
 
-    // Lookup agent ids
+    // Lookup agent ids (email column stores username)
     const agentRows = await db
-      .select({ id: usersTable.id, email: usersTable.email })
+      .select({ id: usersTable.id, email: usersTable.email, role: usersTable.role })
       .from(usersTable);
-    const agentIdByEmail = Object.fromEntries(
-      agentRows.filter((r) => r.email !== "layla@fratelanza.com" && r.email !== "omar@fratelanza.com").map((r) => [r.email, r.id]),
+    const agentIdByUsername = Object.fromEntries(
+      agentRows.filter((r) => r.role === "agent").map((r) => [r.email, r.id]),
     );
-    const agentEmails = Object.keys(agentIdByEmail);
+    const agentUsernames = Object.keys(agentIdByUsername);
 
     // Conversations + 2 messages each — seed 55 conversations across the
     // 22 customers (~2.5 per customer) to give analytics a richer dataset.
     const TOTAL_CONVERSATIONS = 55;
     for (let i = 0; i < TOTAL_CONVERSATIONS; i++) {
       const customerId = customerIds[i % customerIds.length];
-      const agentEmail = agentEmails[i % agentEmails.length];
-      const agentId = agentIdByEmail[agentEmail];
+      const agentUsername = agentUsernames[i % agentUsernames.length];
+      const agentId = agentIdByUsername[agentUsername];
       const status = STATUSES[i % STATUSES.length];
       const lastMsg = SNIPPETS[i % SNIPPETS.length];
       const cTags = i % 2 === 0 ? ["Follow-up"] : [];

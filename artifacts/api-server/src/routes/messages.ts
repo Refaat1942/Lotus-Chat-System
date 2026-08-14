@@ -5,6 +5,9 @@ import { eq, asc } from "drizzle-orm";
 import { requireAuth, AuthRequest } from "../middlewares/auth";
 import { requirePermission } from "../middlewares/permissions";
 import type { Server as IOServer } from "socket.io";
+import { logger } from "../lib/logger";
+import { isWhatsAppConfigured, sendTextMessage } from "../lib/whatsapp/meta-client";
+import { normalizeWhatsAppPhone } from "../lib/whatsapp/phone";
 
 const router = Router();
 
@@ -72,6 +75,44 @@ router.post("/conversations/:id/messages", requireAuth, requirePermission("canSe
     status: "sent",
   }).returning();
 
+  let deliveryWarning: string | undefined;
+
+  if (!isNote && senderType === "agent") {
+    const [convRow] = await db
+      .select({
+        channel: conversationsTable.channel,
+        customerPhone: customersTable.phone,
+      })
+      .from(conversationsTable)
+      .innerJoin(customersTable, eq(conversationsTable.customerId, customersTable.id))
+      .where(eq(conversationsTable.id, convId))
+      .limit(1);
+
+    if (convRow?.channel === "whatsapp" && isWhatsAppConfigured()) {
+      try {
+        const to = normalizeWhatsAppPhone(convRow.customerPhone);
+        const { wamid } = await sendTextMessage(to, body);
+        await db
+          .update(messagesTable)
+          .set({ externalId: wamid, status: "sent" })
+          .where(eq(messagesTable.id, message.id));
+        message.externalId = wamid;
+        message.status = "sent";
+      } catch (err) {
+        logger.error(
+          { err, messageId: message.id, conversationId: convId },
+          "WhatsApp outbound delivery failed",
+        );
+        await db
+          .update(messagesTable)
+          .set({ status: "failed" })
+          .where(eq(messagesTable.id, message.id));
+        message.status = "failed";
+        deliveryWarning = "WhatsApp delivery failed; message saved locally.";
+      }
+    }
+  }
+
   // Smart pending detection: when an agent replies in an open conversation,
   // mark it as "pending" — i.e. we are now waiting on the customer. Internal
   // notes do NOT change status (they aren't visible to the customer). When the
@@ -102,7 +143,9 @@ router.post("/conversations/:id/messages", requireAuth, requirePermission("canSe
     io.to(`conv:${convId}`).emit("new_message", message);
   }
 
-  res.status(201).json(message);
+  res.status(201).json(
+    deliveryWarning ? { ...message, deliveryWarning } : message,
+  );
 });
 
 export default router;
