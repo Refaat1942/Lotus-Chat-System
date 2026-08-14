@@ -1,27 +1,27 @@
+name: ${COMPOSE_PROJECT_NAME:-fratelanza-chat}
+
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: fratelanza_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-fratelanza}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fratelanza_dev_password_change_me}
       POSTGRES_DB: ${POSTGRES_DB:-fratelanza}
     volumes:
-      - fratelanza_db_data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fratelanza} -d ${POSTGRES_DB:-fratelanza}"]
       interval: 5s
       timeout: 5s
       retries: 10
     networks:
-      - lotus_net
+      - app_net
 
   api:
     build:
       context: ..
       dockerfile: Dockerfile
-    container_name: fratelanza_api
     restart: unless-stopped
     depends_on:
       postgres:
@@ -33,24 +33,23 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required - set it in .env}
       RUN_SEED: ${RUN_SEED:-true}
     networks:
-      - lotus_net
+      - app_net
 
   web:
     build:
       context: ..
       dockerfile: Dockerfile.web
-    container_name: fratelanza_web
     restart: unless-stopped
     depends_on:
       - api
     ports:
-      - "${WEB_PORT:-8090}:80"
+      - "${WEB_PORT:-15600}:80"
     networks:
-      - lotus_net
+      - app_net
 
 volumes:
-  fratelanza_db_data:
+  db_data:
 
 networks:
-  lotus_net:
+  app_net:
     driver: bridge
