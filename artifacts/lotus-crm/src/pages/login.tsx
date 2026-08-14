@@ -19,13 +19,18 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useBranding } from "@/lib/api-extra";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { useT } from "@/i18n";
 
-const loginSchema = z.object({
-  email: z.string().trim().min(2, "Username is required"),
-  password: z.string().min(1, "Password is required"),
-});
+function useLoginSchema() {
+  const t = useT();
+  return z.object({
+    email: z.string().trim().min(2, t("login.usernameRequired")),
+    password: z.string().min(1, t("login.passwordRequired")),
+  });
+}
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+type LoginFormValues = z.infer<ReturnType<typeof useLoginSchema>>;
 
 export default function LoginPage() {
   const [, setLocation] = useLocation();
@@ -33,6 +38,8 @@ export default function LoginPage() {
   const { login } = useAuth();
   const loginMutation = useLogin();
   const { data: branding } = useBranding();
+  const t = useT();
+  const loginSchema = useLoginSchema();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -49,9 +56,8 @@ export default function LoginPage() {
         },
         onError: (err) => {
           toast({
-            title: "Login failed",
-            description:
-              err.data?.error || "Invalid credentials. Please try again.",
+            title: t("login.failed"),
+            description: err.data?.error || t("login.invalidCredentials"),
             variant: "destructive",
           });
         },
@@ -59,20 +65,20 @@ export default function LoginPage() {
     );
   };
 
-  const companyName = branding?.companyName ?? "Fratelanza Chat Management System";
+  const companyName = branding?.companyName ?? t("common.appName");
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background px-4 relative overflow-hidden">
-      {/* Premium gradient background */}
+      <div className="absolute top-4 end-4 z-10">
+        <LanguageSwitcher />
+      </div>
+
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5" />
-      
-      {/* Animated background elements */}
       <div className="absolute -top-40 -left-40 h-80 w-80 rounded-full bg-primary/10 blur-3xl pointer-events-none animate-pulse" />
       <div className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-accent/10 blur-3xl pointer-events-none animate-pulse" style={{ animationDelay: "1s" }} />
       <div className="absolute top-1/2 left-1/4 h-60 w-60 rounded-full bg-primary/5 blur-3xl pointer-events-none animate-pulse" style={{ animationDelay: "2s" }} />
 
       <div className="relative w-full max-w-md">
-        {/* Header section with premium styling */}
         <div className="mb-8 flex flex-col items-center justify-center text-center">
           <div className="mb-6 relative">
             {branding?.logoUrl ? (
@@ -94,12 +100,12 @@ export default function LoginPage() {
               </div>
             )}
           </div>
-          
+
           <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-transparent mb-2">
             {companyName}
           </h1>
           <p className="text-muted-foreground text-sm font-medium">
-            Modern Communication Platform
+            {t("common.tagline")}
           </p>
           <div className="mt-4 flex items-center justify-center gap-2">
             <div className="h-1 w-8 bg-gradient-to-r from-primary to-accent rounded-full" />
@@ -108,20 +114,23 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Login card with premium styling */}
         <div className="relative">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl blur-xl" />
           <Card className="relative border-border/50 backdrop-blur-xl bg-background/80 shadow-2xl">
             <CardHeader className="space-y-1 pb-6 border-b border-border/30">
-              <CardTitle className="text-2xl bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">Welcome Back</CardTitle>
+              <CardTitle className="text-2xl bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
+                {t("login.welcome")}
+              </CardTitle>
               <CardDescription className="text-sm">
-                Sign in to your account to continue
+                {t("login.subtitle")}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="font-medium text-foreground">Username</Label>
+                  <Label htmlFor="email" className="font-medium text-foreground">
+                    {t("login.username")}
+                  </Label>
                   <Input
                     id="email"
                     type="text"
@@ -139,9 +148,11 @@ export default function LoginPage() {
                     </p>
                   )}
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="font-medium text-foreground">Password</Label>
+                  <Label htmlFor="password" className="font-medium text-foreground">
+                    {t("login.password")}
+                  </Label>
                   <Input
                     id="password"
                     type="password"
@@ -158,21 +169,25 @@ export default function LoginPage() {
                     </p>
                   )}
                 </div>
-                
+
                 <Button
                   type="submit"
                   className="w-full h-11 mt-6 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 transition-all transform active:scale-95 font-medium text-base group"
                   disabled={loginMutation.isPending}
                   data-testid="button-submit-login"
                 >
-                  <span>{loginMutation.isPending ? "Signing in..." : "Sign In"}</span>
-                  {!loginMutation.isPending && <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />}
+                  <span>{loginMutation.isPending ? t("login.signingIn") : t("login.signIn")}</span>
+                  {!loginMutation.isPending && (
+                    <ArrowRight className="ms-2 h-4 w-4 group-hover:translate-x-1 transition-transform rtl:rotate-180" />
+                  )}
                 </Button>
               </form>
             </CardContent>
             <CardFooter className="border-t border-border/30 pt-4 flex flex-col gap-3">
               <p className="text-xs text-muted-foreground text-center">
-                Authorized personnel only.<br />For access issues, contact your administrator.
+                {t("login.authorizedOnly")}
+                <br />
+                {t("login.contactAdmin")}
               </p>
             </CardFooter>
           </Card>

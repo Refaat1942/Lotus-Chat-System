@@ -46,6 +46,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { useT } from "@/i18n";
 
 const createCustomerSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters"),
@@ -62,6 +63,7 @@ const createCustomerSchema = z.object({
 });
 
 export default function CustomersPage() {
+  const t = useT();
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -85,9 +87,9 @@ export default function CustomersPage() {
     <div className="flex-1 space-y-6 p-8 overflow-y-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Patient Directory</h2>
+          <h2 className="text-3xl font-bold tracking-tight">{t("customers.title")}</h2>
           <p className="text-muted-foreground">
-            Manage and view patient histories across all branches.
+            {t("customers.subtitle")}
           </p>
         </div>
         <CreateCustomerDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
@@ -97,7 +99,7 @@ export default function CustomersPage() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name, phone, or tags..."
+            placeholder={t("customers.searchPlaceholder")}
             className="pl-9 bg-background"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -108,7 +110,7 @@ export default function CustomersPage() {
             <SelectValue placeholder="Branch" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Branches</SelectItem>
+            <SelectItem value="all">{t("customers.allBranches")}</SelectItem>
             <SelectItem value="Downtown">Downtown</SelectItem>
             <SelectItem value="Westside">Westside</SelectItem>
             <SelectItem value="North">North Hills</SelectItem>
@@ -120,12 +122,12 @@ export default function CustomersPage() {
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead>Patient</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Branch</TableHead>
-              <TableHead>Address</TableHead>
-              <TableHead>Tags</TableHead>
-              <TableHead>Joined</TableHead>
+              <TableHead>{t("customers.contactColumn")}</TableHead>
+              <TableHead>{t("chat.contactInfo")}</TableHead>
+              <TableHead>{t("common.branch")}</TableHead>
+              <TableHead>{t("customers.address")}</TableHead>
+              <TableHead>{t("chat.tags")}</TableHead>
+              <TableHead>{t("common.joined")}</TableHead>
               <TableHead className="w-[50px]" />
             </TableRow>
           </TableHeader>
@@ -152,7 +154,7 @@ export default function CustomersPage() {
                   <TableRow>
                     <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                       <User className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                      No patients found matching your criteria.
+                      {t("customers.noResults")}
                     </TableCell>
                   </TableRow>
                 )
@@ -177,7 +179,7 @@ export default function CustomersPage() {
                             className="text-[10px] h-5 px-1.5 gap-1"
                           >
                             <Ban className="h-3 w-3" />
-                            Blocked
+                            {t("common.blocked")}
                           </Badge>
                         )}
                       </div>
@@ -245,6 +247,7 @@ function CustomerDetailView({
   customerId: number;
   onBack: () => void;
 }) {
+  const t = useT();
   const { toast } = useToast();
   const { data: customer, isLoading } = useGetCustomer(customerId, {
     query: { queryKey: getGetCustomerQueryKey(customerId) },
@@ -259,20 +262,17 @@ function CustomerDetailView({
   const handleToggleBlock = () => {
     if (isBlocked) {
       unblockMut.mutate(customerId, {
-        onSuccess: () => toast({ title: "Customer unblocked" }),
-        onError: () => toast({ title: "Failed to unblock", variant: "destructive" }),
+        onSuccess: () => toast({ title: t("customers.unblocked") }),
+        onError: () => toast({ title: t("customers.failedUnblock"), variant: "destructive" }),
       });
     } else {
-      const reason = window.prompt(
-        "Optional reason for blocking this customer (will be visible to staff):",
-        "",
-      );
+      const reason = window.prompt(t("customers.blockPrompt"), "");
       if (reason === null) return;
       blockMut.mutate(
         { id: customerId, reason: reason.trim() },
         {
-          onSuccess: () => toast({ title: "Customer blocked" }),
-          onError: () => toast({ title: "Failed to block", variant: "destructive" }),
+          onSuccess: () => toast({ title: t("customers.blocked") }),
+          onError: () => toast({ title: t("customers.failedBlock"), variant: "destructive" }),
         },
       );
     }
@@ -293,7 +293,7 @@ function CustomerDetailView({
   if (!customer) {
     return (
       <div className="flex-1 flex items-center justify-center text-muted-foreground">
-        Customer not found.
+        {t("customers.customerNotFound")}
       </div>
     );
   }
@@ -303,7 +303,7 @@ function CustomerDetailView({
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5">
           <ArrowLeft className="h-4 w-4" />
-          Back
+          {t("common.back")}
         </Button>
         <Separator orientation="vertical" className="h-5" />
         <h2 className="text-2xl font-bold tracking-tight">{customer.name}</h2>
@@ -316,7 +316,7 @@ function CustomerDetailView({
           {isBlocked && (
             <Badge variant="destructive" className="text-xs gap-1">
               <Ban className="h-3 w-3" />
-              Blocked
+              {t("common.blocked")}
             </Badge>
           )}
         </div>
@@ -332,12 +332,12 @@ function CustomerDetailView({
             {isBlocked ? (
               <>
                 <ShieldCheck className="h-4 w-4" />
-                Unblock
+                {t("customers.unblock")}
               </>
             ) : (
               <>
                 <Ban className="h-4 w-4" />
-                Block customer
+                {t("customers.blockCustomer")}
               </>
             )}
           </Button>
@@ -349,9 +349,9 @@ function CustomerDetailView({
           <CardContent className="p-4 flex items-start gap-3">
             <Ban className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
             <div className="text-sm">
-              <p className="font-medium text-destructive">This customer is blocked.</p>
+              <p className="font-medium text-destructive">{t("customers.blockedBanner")}</p>
               <p className="text-muted-foreground">
-                Outbound messages are disabled for all of their conversations. Internal notes are still allowed.
+                {t("customers.blockedBannerDetail")}
                 {blockedReason ? <> &middot; <span className="italic">{blockedReason}</span></> : null}
               </p>
             </div>
@@ -363,7 +363,7 @@ function CustomerDetailView({
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            AI Contact Brief
+            {t("customers.aiBrief")}
           </CardTitle>
           <Button
             size="sm"
@@ -373,12 +373,12 @@ function CustomerDetailView({
             onClick={() =>
               aiBriefMut.mutate(undefined, {
                 onSuccess: (data) => setAiBrief(data),
-                onError: () => toast({ title: "Could not generate brief", variant: "destructive" }),
+                onError: () => toast({ title: t("customers.couldNotGenerateBrief"), variant: "destructive" }),
               })
             }
           >
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${aiBriefMut.isPending ? "animate-spin" : ""}`} />
-            {aiBrief ? "Refresh" : "Generate"}
+            <RefreshCw className={`h-3.5 w-3.5 me-1.5 ${aiBriefMut.isPending ? "animate-spin" : ""}`} />
+            {aiBrief ? t("customers.refresh") : t("customers.generate")}
           </Button>
         </CardHeader>
         {aiBrief && (
@@ -408,7 +408,7 @@ function CustomerDetailView({
                 </Avatar>
                 <div>
                   <CardTitle className="text-base">{customer.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{customer.branch ?? "No branch"}</p>
+                  <p className="text-sm text-muted-foreground">{customer.branch ?? t("customers.noBranch")}</p>
                 </div>
               </div>
             </CardHeader>
@@ -472,9 +472,9 @@ function CustomerDetailView({
         <div className="md:col-span-2 space-y-4">
           <h3 className="font-semibold text-base flex items-center gap-2">
             <MessageSquare className="h-4 w-4 text-primary" />
-            Conversation History
+            {t("customers.conversationHistory")}
             <span className="text-muted-foreground font-normal text-sm">
-              ({conversations?.length ?? 0} total)
+              ({conversations?.length ?? 0} {t("customers.total")})
             </span>
           </h3>
 
@@ -488,7 +488,7 @@ function CustomerDetailView({
                   <CardContent className="h-32 flex items-center justify-center text-muted-foreground text-sm">
                     <div className="text-center">
                       <MessageSquare className="h-6 w-6 mx-auto mb-2 opacity-20" />
-                      No conversations yet
+                      {t("customers.noConversations")}
                     </div>
                   </CardContent>
                 </Card>
@@ -564,6 +564,7 @@ function CreateCustomerDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useT();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const createMut = useCreateCustomer();
@@ -609,13 +610,13 @@ function CreateCustomerDialog({
       },
       {
         onSuccess: () => {
-          toast({ title: "Patient profile created successfully" });
+          toast({ title: t("customers.created") });
           queryClient.invalidateQueries({ queryKey: getListCustomersQueryKey() });
           form.reset();
           onOpenChange(false);
         },
         onError: () => {
-          toast({ title: "Failed to create profile", variant: "destructive" });
+          toast({ title: t("customers.failedCreate"), variant: "destructive" });
         },
       }
     );
@@ -626,14 +627,14 @@ function CreateCustomerDialog({
       <DialogTrigger asChild>
         <Button data-testid="btn-create-customer">
           <Plus className="h-4 w-4 mr-2" />
-          Add Patient
+          {t("customers.addContact")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle>Create Patient Profile</DialogTitle>
+          <DialogTitle>{t("customers.createTitle")}</DialogTitle>
           <DialogDescription>
-            Add a new patient to the CRM. This allows agents to attach clinical notes to their profile.
+            {t("customers.createDesc")}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -644,7 +645,7 @@ function CreateCustomerDialog({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name *</FormLabel>
+                    <FormLabel>{t("customers.fullName")}</FormLabel>
                     <FormControl>
                       <Input placeholder="John Doe" {...field} />
                     </FormControl>
@@ -657,7 +658,7 @@ function CreateCustomerDialog({
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Number *</FormLabel>
+                    <FormLabel>{t("customers.phoneNumber")}</FormLabel>
                     <FormControl>
                       <Input placeholder="+1 (555) 000-0000" {...field} />
                     </FormControl>
@@ -673,11 +674,11 @@ function CreateCustomerDialog({
                 name="branch"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Home Branch</FormLabel>
+                    <FormLabel>{t("customers.homeBranch")}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select branch" />
+                          <SelectValue placeholder={t("customers.selectBranch")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -695,7 +696,7 @@ function CreateCustomerDialog({
                 name="tags"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tags</FormLabel>
+                    <FormLabel>{t("chat.tags")}</FormLabel>
                     <FormControl>
                       <TagsMultiSelect
                         value={field.value ?? []}
@@ -716,7 +717,7 @@ function CreateCustomerDialog({
                 <FormItem>
                   <FormLabel className="flex items-center gap-1.5">
                     <MapPin className="h-3 w-3" />
-                    Address
+                    {t("customers.address")}
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -736,7 +737,7 @@ function CreateCustomerDialog({
                 <FormItem>
                   <FormLabel className="flex items-center text-blue-600 dark:text-blue-400">
                     <FileText className="h-3 w-3 mr-1.5" />
-                    Clinical / Prescription Notes
+                    {t("customers.clinicalPrescriptionNotes")}
                   </FormLabel>
                   <FormControl>
                     <Textarea
@@ -755,7 +756,7 @@ function CreateCustomerDialog({
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>General Notes</FormLabel>
+                  <FormLabel>{t("chat.generalNotes")}</FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="Delivery instructions, preferred contact times..."
@@ -770,10 +771,10 @@ function CreateCustomerDialog({
 
             <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button type="submit" disabled={createMut.isPending}>
-                {createMut.isPending ? "Saving..." : "Save Profile"}
+                {createMut.isPending ? t("customers.saving") : t("customers.saveProfile")}
               </Button>
             </DialogFooter>
           </form>
@@ -795,6 +796,7 @@ function TagsMultiSelect({
   onChange: (v: string[]) => void;
   options: string[];
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
 
@@ -826,7 +828,7 @@ function TagsMultiSelect({
         >
           <div className="flex flex-wrap gap-1 items-center">
             {value.length === 0
-              ? <span className="text-muted-foreground">Select tags...</span>
+              ? <span className="text-muted-foreground">{t("customers.selectTags")}</span>
               : value.map((tag) => (
                 <Badge key={tag} variant="secondary" className="font-normal text-xs gap-1">
                   {tag}
@@ -850,7 +852,7 @@ function TagsMultiSelect({
         <div className="p-2 border-b border-border">
           <div className="flex gap-1.5">
             <Input
-              placeholder="Search or add new tag"
+              placeholder={t("customers.searchAddTag")}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
@@ -879,7 +881,7 @@ function TagsMultiSelect({
             {filtered.length === 0
               ? (
                 <p className="text-xs text-muted-foreground p-3 text-center">
-                  No tags yet. Type above to add one.
+                  {t("customers.noTagsYet")}
                 </p>
               )
               : filtered.map((tag) => {
