@@ -32,6 +32,7 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-fratelanza}:${POSTGRES_PASSWORD:-fratelanza_dev_password_change_me}@postgres:5432/${POSTGRES_DB:-fratelanza}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required - set it in .env}
       RUN_SEED: ${RUN_SEED:-true}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
     networks:
       - lotus_net
 
