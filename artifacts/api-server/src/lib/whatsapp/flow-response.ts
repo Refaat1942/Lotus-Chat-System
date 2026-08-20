@@ -82,6 +82,15 @@ function parseNumberFromString(value: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** Exact budget_range slugs from the Fratelanza Meta WhatsApp Flow. */
+const META_FLOW_BUDGET_MIN_EGP: Readonly<Record<string, number>> = {
+  under_30000: 0,
+  "30000_49999": 30_000,
+  "50000_100000": 50_000,
+  "100000_250000": 100_000,
+  "250000_plus": 250_000,
+};
+
 /**
  * Infer the minimum budget (EGP) represented by a Flow budget_range answer.
  * Returns null when the value cannot be interpreted reliably.
@@ -89,6 +98,11 @@ function parseNumberFromString(value: string): number | null {
 export function parseBudgetRangeMinEgp(budgetRange: string): number | null {
   const raw = budgetRange.trim().toLowerCase();
   if (!raw) return null;
+
+  const metaMin = META_FLOW_BUDGET_MIN_EGP[raw];
+  if (metaMin !== undefined) {
+    return metaMin;
+  }
 
   const cleaned = raw
     .replace(/\begp\b/g, "")

@@ -59,9 +59,33 @@ describe("deriveBudgetQualified", () => {
 });
 
 describe("parseBudgetRangeMinEgp", () => {
-  it("parses common Fratelanza-style ranges", () => {
-    expect(parseBudgetRangeMinEgp("50000-100000 EGP")).toBe(50000);
-    expect(parseBudgetRangeMinEgp("50k+")).toBe(50000);
+  it("parses exact Meta Flow budget_range slugs", () => {
+    expect(parseBudgetRangeMinEgp("under_30000")).toBe(0);
+    expect(parseBudgetRangeMinEgp("30000_49999")).toBe(30_000);
+    expect(parseBudgetRangeMinEgp("50000_100000")).toBe(50_000);
+    expect(parseBudgetRangeMinEgp("100000_250000")).toBe(100_000);
+    expect(parseBudgetRangeMinEgp("250000_plus")).toBe(250_000);
+  });
+
+  it("derives qualification from Meta Flow slugs (server-side only)", () => {
+    expect(deriveBudgetQualified("under_30000")).toBe(false);
+    expect(deriveBudgetQualified("30000_49999")).toBe(false);
+    expect(deriveBudgetQualified("50000_100000")).toBe(true);
+    expect(deriveBudgetQualified("100000_250000")).toBe(true);
+    expect(deriveBudgetQualified("250000_plus")).toBe(true);
+  });
+
+  it("never qualifies 30000_49999 even when client budget_qualified is true", () => {
+    expect(deriveBudgetQualified("30000_49999", true)).toBe(false);
+  });
+
+  it("parses common human-readable Fratelanza-style ranges", () => {
+    expect(parseBudgetRangeMinEgp("under 30000")).toBe(0);
+    expect(parseBudgetRangeMinEgp("under 50000")).toBe(0);
+    expect(parseBudgetRangeMinEgp("30000-49999")).toBe(30_000);
+    expect(parseBudgetRangeMinEgp("50000-100000 EGP")).toBe(50_000);
+    expect(parseBudgetRangeMinEgp("50000+")).toBe(50_000);
+    expect(parseBudgetRangeMinEgp("50k+")).toBe(50_000);
   });
 });
 
