@@ -1,8 +1,7 @@
 {
   "version": "6.0",
   "routing_model": {
-    "BUDGET_SCREEN": ["BUDGET_GATE"],
-    "BUDGET_GATE": ["NOT_QUALIFIED", "PROJECT_SCREEN"],
+    "BUDGET_SCREEN": ["NOT_QUALIFIED", "PROJECT_SCREEN"],
     "NOT_QUALIFIED": [],
     "PROJECT_SCREEN": ["CONTACT_SCREEN"],
     "CONTACT_SCREEN": ["CONFIRMATION_SCREEN"],
@@ -21,7 +20,7 @@
           },
           {
             "type": "TextBody",
-            "text": "اختر النطاق الأقرب لتقدير ميزانية مشروعك بالجنيه المصري."
+            "text": "اختر النطاق الأقرب لتقدير ميزانية مشروعك بالجنيه المصري. إذا كانت ميزانيتك أقل من 50,000 جنيه، سيتم توجيهك مباشرة. وإذا كانت 50,000 جنيه أو أكثر، اضغط متابعة."
           },
           {
             "type": "Form",
@@ -35,11 +34,35 @@
                 "data-source": [
                   {
                     "id": "under_30000",
-                    "title": "أقل من 30,000 جنيه"
+                    "title": "أقل من 30,000 جنيه",
+                    "on-select-action": {
+                      "name": "navigate",
+                      "next": {
+                        "type": "screen",
+                        "name": "NOT_QUALIFIED"
+                      },
+                      "payload": {
+                        "budget_range": "under_30000",
+                        "source": "whatsapp_flow",
+                        "flow_name": "Fratelanza Lead Qualification"
+                      }
+                    }
                   },
                   {
                     "id": "30000_49999",
-                    "title": "30,000 – 49,999 جنيه"
+                    "title": "30,000 – 49,999 جنيه",
+                    "on-select-action": {
+                      "name": "navigate",
+                      "next": {
+                        "type": "screen",
+                        "name": "NOT_QUALIFIED"
+                      },
+                      "payload": {
+                        "budget_range": "30000_49999",
+                        "source": "whatsapp_flow",
+                        "flow_name": "Fratelanza Lead Qualification"
+                      }
+                    }
                   },
                   {
                     "id": "50000_100000",
@@ -62,7 +85,7 @@
                   "name": "navigate",
                   "next": {
                     "type": "screen",
-                    "name": "BUDGET_GATE"
+                    "name": "PROJECT_SCREEN"
                   },
                   "payload": {
                     "budget_range": "${form.budget_range}",
@@ -72,145 +95,6 @@
                 }
               }
             ]
-          }
-        ]
-      }
-    },
-    {
-      "id": "BUDGET_GATE",
-      "title": "جاري التوجيه",
-      "data": {
-        "budget_range": {
-          "type": "string",
-          "__example__": "under_30000"
-        },
-        "source": {
-          "type": "string",
-          "__example__": "whatsapp_flow"
-        },
-        "flow_name": {
-          "type": "string",
-          "__example__": "Fratelanza Lead Qualification"
-        }
-      },
-      "layout": {
-        "type": "SingleColumnLayout",
-        "children": [
-          {
-            "type": "Switch",
-            "value": "${data.budget_range}",
-            "cases": {
-              "under_30000": [
-                {
-                  "type": "TextBody",
-                  "text": "شكراً لاهتمامك. ميزانيتك الحالية أقل من الحد الأدنى لمشاريعنا."
-                },
-                {
-                  "type": "Footer",
-                  "label": "متابعة",
-                  "on-click-action": {
-                    "name": "navigate",
-                    "next": {
-                      "type": "screen",
-                      "name": "NOT_QUALIFIED"
-                    },
-                    "payload": {
-                      "budget_range": "${data.budget_range}",
-                      "source": "${data.source}",
-                      "flow_name": "${data.flow_name}"
-                    }
-                  }
-                }
-              ],
-              "30000_49999": [
-                {
-                  "type": "TextBody",
-                  "text": "شكراً لاهتمامك. ميزانيتك الحالية أقل من الحد الأدنى لمشاريعنا."
-                },
-                {
-                  "type": "Footer",
-                  "label": "متابعة",
-                  "on-click-action": {
-                    "name": "navigate",
-                    "next": {
-                      "type": "screen",
-                      "name": "NOT_QUALIFIED"
-                    },
-                    "payload": {
-                      "budget_range": "${data.budget_range}",
-                      "source": "${data.source}",
-                      "flow_name": "${data.flow_name}"
-                    }
-                  }
-                }
-              ],
-              "50000_100000": [
-                {
-                  "type": "TextBody",
-                  "text": "ميزانيتك تتوافق مع نطاق مشاريعنا. لنكمل تفاصيل المشروع."
-                },
-                {
-                  "type": "Footer",
-                  "label": "متابعة",
-                  "on-click-action": {
-                    "name": "navigate",
-                    "next": {
-                      "type": "screen",
-                      "name": "PROJECT_SCREEN"
-                    },
-                    "payload": {
-                      "budget_range": "${data.budget_range}",
-                      "source": "${data.source}",
-                      "flow_name": "${data.flow_name}"
-                    }
-                  }
-                }
-              ],
-              "100000_250000": [
-                {
-                  "type": "TextBody",
-                  "text": "ميزانيتك تتوافق مع نطاق مشاريعنا. لنكمل تفاصيل المشروع."
-                },
-                {
-                  "type": "Footer",
-                  "label": "متابعة",
-                  "on-click-action": {
-                    "name": "navigate",
-                    "next": {
-                      "type": "screen",
-                      "name": "PROJECT_SCREEN"
-                    },
-                    "payload": {
-                      "budget_range": "${data.budget_range}",
-                      "source": "${data.source}",
-                      "flow_name": "${data.flow_name}"
-                    }
-                  }
-                }
-              ],
-              "250000_plus": [
-                {
-                  "type": "TextBody",
-                  "text": "ميزانيتك تتوافق مع نطاق مشاريعنا. لنكمل تفاصيل المشروع."
-                },
-                {
-                  "type": "Footer",
-                  "label": "متابعة",
-                  "on-click-action": {
-                    "name": "navigate",
-                    "next": {
-                      "type": "screen",
-                      "name": "PROJECT_SCREEN"
-                    },
-                    "payload": {
-                      "budget_range": "${data.budget_range}",
-                      "source": "${data.source}",
-                      "flow_name": "${data.flow_name}"
-                    }
-                  }
-                }
-              ]
-            }
           }
         ]
       }

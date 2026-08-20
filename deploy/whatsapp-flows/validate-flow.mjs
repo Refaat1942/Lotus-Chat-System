@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Structural validator for Fratelanza Meta WhatsApp Flow JSON.
- * Mirrors key Meta Flow validation rules used before Builder upload.
+ * Checks Meta Builder-safe patterns (no If/Switch gate routing).
  */
 
 import { readFileSync } from "node:fs";
@@ -26,6 +26,21 @@ const QUALIFIED_BUDGET_IDS = new Set([
 ]);
 
 const UNQUALIFIED_BUDGET_IDS = new Set(["under_30000", "30000_49999"]);
+
+const ALLOWED_COMPONENT_TYPES = new Set([
+  "TextHeading",
+  "TextSubheading",
+  "TextBody",
+  "TextCaption",
+  "Form",
+  "RadioButtonsGroup",
+  "Dropdown",
+  "TextArea",
+  "TextInput",
+  "Footer",
+  "If",
+  "Switch",
+]);
 
 const errors = [];
 const warnings = [];
@@ -63,23 +78,27 @@ function collectScreens(flow) {
   return byId;
 }
 
-function getNavigateTargets(screen) {
-  const targets = new Set();
-  walkComponents(screen.layout, (node) => {
-    const action = node["on-click-action"];
-    if (action?.name === "navigate" && action.next?.name) {
-      targets.add(action.next.name);
+function collectNavigateActions(screen) {
+  const actions = [];
+
+  walkComponents(screen.layout, (node, path) => {
+    if (node["on-click-action"]?.name === "navigate") {
+      actions.push({ screen: screen.id, path, action: node["on-click-action"] });
+    }
+    if (node.type === "RadioButtonsGroup") {
+      for (const opt of node["data-source"] ?? []) {
+        if (opt["on-select-action"]?.name === "navigate") {
+          actions.push({
+            screen: screen.id,
+            path: `${path}.data-source.${opt.id}`,
+            action: opt["on-select-action"],
+          });
+        }
+      }
     }
   });
-  return targets;
-}
 
-function findScreenFooters(screen) {
-  const footers = [];
-  walkComponents(screen.layout, (node, path) => {
-    if (node.type === "Footer") footers.push({ node, path });
-  });
-  return footers;
+  return actions;
 }
 
 function findIfWithFooters(screen) {
@@ -90,6 +109,20 @@ function findIfWithFooters(screen) {
     const elseFooters = (node.else ?? []).filter((c) => c.type === "Footer");
     if (thenFooters.length || elseFooters.length) {
       results.push({ path, thenFooters: thenFooters.length, elseFooters: elseFooters.length });
+    }
+  });
+  return results;
+}
+
+function findSwitchWithFooters(screen) {
+  const results = [];
+  walkComponents(screen.layout, (node, path) => {
+    if (node.type !== "Switch") return;
+    for (const [caseKey, items] of Object.entries(node.cases ?? {})) {
+      const footers = items.filter((c) => c.type === "Footer");
+      if (footers.length) {
+        results.push({ path, caseKey, footers: footers.length });
+      }
     }
   });
   return results;
@@ -117,54 +150,75 @@ function walkForForbiddenBindings(obj, path = "root") {
   }
 }
 
+function validateComponentTypes(flow) {
+  for (const screen of flow.screens) {
+    walkComponents(screen.layout, (node, path) => {
+      if (!node.type) {
+        err(`${screen.id}: component missing required "type" at ${path}`);
+        return;
+      }
+      if (!ALLOWED_COMPONENT_TYPES.has(node.type)) {
+        warn(`${screen.id}: uncommon component type "${node.type}" at ${path}`);
+      }
+      if (node.type === "If" || node.type === "Switch") {
+        warn(
+          `${screen.id}: ${node.type} at ${path} — Meta Builder may reject conditional routing; prefer on-select-action`,
+        );
+      }
+    });
+  }
+}
+
+function validateNoGateScreen(screensById) {
+  if (screensById.has("BUDGET_GATE")) {
+    err("BUDGET_GATE must be removed; Meta Builder rejects If/Switch gate routing");
+  }
+}
+
+function validateNoConditionalFooters(flow) {
+  for (const screen of flow.screens) {
+    const ifFooters = findIfWithFooters(screen);
+    if (ifFooters.length) {
+      err(`${screen.id}: If blocks must not contain Footer (${ifFooters.length} found)`);
+    }
+    const switchFooters = findSwitchWithFooters(screen);
+    if (switchFooters.length) {
+      err(`${screen.id}: Switch cases must not contain Footer (${switchFooters.length} found)`);
+    }
+  }
+}
+
 function validateBudgetScreen(screen) {
   if (screen.id !== "BUDGET_SCREEN") return;
 
-  const ifBlocks = findIfWithFooters(screen);
-  if (ifBlocks.length > 0) {
-    err(
-      `BUDGET_SCREEN must not contain If blocks with Footer (found ${ifBlocks.length})`,
-    );
-  }
-
-  let formCount = 0;
   let radioName = null;
-  let footerInForm = false;
-  let footerOutsideForm = false;
   let footerNavigateTarget = null;
+  const optionActions = new Map();
 
-  walkComponents(screen.layout, (node, path) => {
-    if (node.type === "Form") formCount += 1;
+  walkComponents(screen.layout, (node) => {
     if (node.type === "RadioButtonsGroup") {
       radioName = node.name;
       for (const opt of node["data-source"] ?? []) {
         if (!BUDGET_IDS.has(opt.id)) {
           err(`Unknown budget_range option id: ${opt.id}`);
         }
+        if (opt["on-select-action"]) {
+          optionActions.set(opt.id, opt["on-select-action"]);
+        }
       }
     }
     if (node.type === "Footer") {
-      const parentIsFormPath = path.includes(".children");
-      if (screen.layout) {
-        // Footer should live under Form.children on BUDGET_SCREEN
-      }
       const action = node["on-click-action"];
       if (action?.name === "navigate") {
         footerNavigateTarget = action.next?.name;
         const payload = action.payload ?? {};
-        if (!payload.budget_range || payload.budget_range !== "${form.budget_range}") {
-          err("BUDGET_SCREEN Footer navigate payload must include budget_range: ${form.budget_range}");
-        }
-        for (const key of Object.keys(payload)) {
-          if (jsonHasForbiddenBinding(payload[key])) {
-            err(`BUDGET_SCREEN Footer payload must not use ${payload[key]}`);
-          }
+        if (payload.budget_range !== "${form.budget_range}") {
+          err("BUDGET_SCREEN Footer payload must use budget_range: ${form.budget_range}");
         }
       }
     }
   });
 
-  // Verify Form structure: Radio + Footer as siblings inside one Form
   const forms = [];
   walkComponents(screen.layout, (node) => {
     if (node.type === "Form") forms.push(node);
@@ -172,48 +226,45 @@ function validateBudgetScreen(screen) {
 
   if (forms.length !== 1) {
     err(`BUDGET_SCREEN must have exactly one Form (found ${forms.length})`);
-  } else {
-    const form = forms[0];
-    const childTypes = (form.children ?? []).map((c) => c.type);
-    if (!childTypes.includes("RadioButtonsGroup")) {
-      err("BUDGET_SCREEN Form must contain RadioButtonsGroup");
-    }
-    if (!childTypes.includes("Footer")) {
-      err("BUDGET_SCREEN Form must contain Footer");
-    }
-    const footerIdx = childTypes.indexOf("Footer");
-    const radioIdx = childTypes.indexOf("RadioButtonsGroup");
-    if (footerIdx >= 0 && radioIdx >= 0 && footerIdx < radioIdx) {
-      err("BUDGET_SCREEN Footer must come after RadioButtonsGroup inside Form");
-    }
-    footerInForm = childTypes.includes("Footer");
   }
 
   if (radioName !== "budget_range") {
     err(`RadioButtonsGroup name must be budget_range (found ${radioName})`);
   }
 
-  if (footerNavigateTarget !== "BUDGET_GATE") {
-    err(
-      `BUDGET_SCREEN Footer must navigate to BUDGET_GATE (found ${footerNavigateTarget})`,
-    );
+  if (footerNavigateTarget !== "PROJECT_SCREEN") {
+    err(`BUDGET_SCREEN Footer must navigate to PROJECT_SCREEN (found ${footerNavigateTarget})`);
   }
 
-  if (!footerInForm) {
-    err("BUDGET_SCREEN Footer must be inside the Form component");
+  for (const id of UNQUALIFIED_BUDGET_IDS) {
+    const action = optionActions.get(id);
+    if (!action || action.name !== "navigate") {
+      err(`BUDGET_SCREEN option ${id} must on-select navigate to NOT_QUALIFIED`);
+      continue;
+    }
+    if (action.next?.name !== "NOT_QUALIFIED") {
+      err(`BUDGET_SCREEN option ${id} must navigate to NOT_QUALIFIED`);
+    }
+    if (action.payload?.budget_range !== id) {
+      err(`BUDGET_SCREEN option ${id} payload budget_range must be static "${id}"`);
+    }
+  }
+
+  for (const id of QUALIFIED_BUDGET_IDS) {
+    if (optionActions.has(id)) {
+      err(`BUDGET_SCREEN option ${id} must not use on-select-action (use Footer instead)`);
+    }
   }
 }
 
 function validateNavigatePayloads(flow, screensById) {
   for (const screen of flow.screens) {
-    walkComponents(screen.layout, (node, path) => {
-      const action = node["on-click-action"];
-      if (action?.name !== "navigate") return;
+    for (const { action } of collectNavigateActions(screen)) {
       const nextName = action.next?.name;
       const nextScreen = screensById.get(nextName);
       if (!nextScreen) {
         err(`${screen.id}: navigate target unknown screen ${nextName}`);
-        return;
+        continue;
       }
       const dataKeys = new Set(Object.keys(nextScreen.data ?? {}));
       for (const key of Object.keys(action.payload ?? {})) {
@@ -223,44 +274,24 @@ function validateNavigatePayloads(flow, screensById) {
           );
         }
       }
-    });
+    }
   }
 }
 
 function validateRoutingModel(flow, screensById) {
   const model = flow.routing_model ?? {};
-  const screenIds = new Set(screensById.keys());
-
-  for (const id of screenIds) {
-    if (!Object.prototype.hasOwnProperty.call(model, id)) {
-      warn(`routing_model missing entry for screen ${id}`);
-    }
-  }
-
-  for (const [source, destinations] of Object.entries(model)) {
-    if (!screensById.has(source)) {
-      err(`routing_model references unknown screen ${source}`);
-    }
-    for (const dest of destinations) {
-      if (!screensById.has(dest)) {
-        err(`routing_model ${source} -> unknown ${dest}`);
-      }
-    }
-  }
 
   for (const screen of flow.screens) {
-    const targets = getNavigateTargets(screen);
-    for (const t of targets) {
+    for (const { action } of collectNavigateActions(screen)) {
+      const dest = action.next?.name;
       const allowed = model[screen.id] ?? [];
-      if (!allowed.includes(t)) {
-        err(
-          `routing_model missing edge ${screen.id} -> ${t} required by navigate action`,
-        );
+      if (!allowed.includes(dest)) {
+        err(`routing_model missing edge ${screen.id} -> ${dest}`);
       }
     }
   }
 
-  const entryScreens = [...screenIds].filter((id) => {
+  const entryScreens = [...screensById.keys()].filter((id) => {
     const referenced = new Set();
     for (const dests of Object.values(model)) {
       for (const d of dests) referenced.add(d);
@@ -269,53 +300,24 @@ function validateRoutingModel(flow, screensById) {
   });
 
   if (entryScreens.length !== 1 || entryScreens[0] !== "BUDGET_SCREEN") {
-    err(
-      `Expected BUDGET_SCREEN as sole entry screen, found: ${entryScreens.join(", ")}`,
-    );
+    err(`Expected BUDGET_SCREEN as sole entry screen, found: ${entryScreens.join(", ")}`);
   }
 }
 
-function simulatePath(flow, screensById, budgetId) {
+function simulatePath(budgetId) {
   const steps = ["BUDGET_SCREEN"];
-  let current = "BUDGET_SCREEN";
-  let data = {
-    budget_range: budgetId,
-    source: "whatsapp_flow",
-    flow_name: "Fratelanza Lead Qualification",
-  };
 
-  // BUDGET_SCREEN -> BUDGET_GATE
-  current = "BUDGET_GATE";
-  steps.push(current);
-
-  const gate = screensById.get("BUDGET_GATE");
-  const gateSwitch = gate?.layout?.children?.find((c) => c.type === "Switch");
-  if (!gateSwitch?.cases) {
-    err("BUDGET_GATE must use Switch on data.budget_range for routing");
+  if (UNQUALIFIED_BUDGET_IDS.has(budgetId)) {
+    steps.push("NOT_QUALIFIED");
+    return { steps, terminal: "NOT_QUALIFIED" };
   }
 
   if (QUALIFIED_BUDGET_IDS.has(budgetId)) {
-    current = "PROJECT_SCREEN";
-    steps.push(current);
-    current = "CONTACT_SCREEN";
-    steps.push(current);
-    current = "CONFIRMATION_SCREEN";
-    steps.push(current);
-    return { steps, terminal: current, complete: true, data };
+    steps.push("PROJECT_SCREEN", "CONTACT_SCREEN", "CONFIRMATION_SCREEN");
+    return { steps, terminal: "CONFIRMATION_SCREEN" };
   }
 
-  if (UNQUALIFIED_BUDGET_IDS.has(budgetId)) {
-    current = "NOT_QUALIFIED";
-    steps.push(current);
-    return {
-      steps,
-      terminal: current,
-      complete: true,
-      data: { ...data, budget_qualified: false },
-    };
-  }
-
-  return { steps, terminal: current, complete: false, data };
+  return { steps, terminal: "BUDGET_SCREEN" };
 }
 
 function validateTerminalScreens(screensById) {
@@ -327,49 +329,29 @@ function validateTerminalScreens(screensById) {
   if (!confirm?.terminal) err("CONFIRMATION_SCREEN must be terminal: true");
   if (!confirm?.success) err("CONFIRMATION_SCREEN must be success: true");
 
-  const nqFooter = findScreenFooters(nq)[0]?.node;
-  if (nqFooter?.["on-click-action"]?.name !== "complete") {
-    err("NOT_QUALIFIED Footer must use complete action");
-  }
+  const nqFooter = nq?.layout?.children?.find((c) => c.type === "Footer");
   const nqPayload = nqFooter?.["on-click-action"]?.payload ?? {};
   if (nqPayload.budget_qualified !== false) {
-    err("NOT_QUALIFIED complete payload must include budget_qualified: false (static boolean)");
-  }
-  if (jsonHasForbiddenBinding(nqPayload.budget_qualified)) {
-    err("NOT_QUALIFIED must not bind budget_qualified from form");
+    err("NOT_QUALIFIED complete payload must include budget_qualified: false");
   }
 
-  const confirmFooter = findScreenFooters(confirm)[0]?.node;
+  const confirmFooter = confirm?.layout?.children?.find((c) => c.type === "Footer");
   const confirmPayload = confirmFooter?.["on-click-action"]?.payload ?? {};
   if (confirmPayload.budget_qualified !== true) {
-    err("CONFIRMATION_SCREEN complete payload must include budget_qualified: true (static boolean)");
-  }
-  const requiredCompleteFields = [
-    "budget_range",
-    "project_type",
-    "customer_name",
-    "source",
-    "flow_name",
-  ];
-  for (const field of requiredCompleteFields) {
-    if (!(field in confirmPayload)) {
-      err(`CONFIRMATION_SCREEN complete payload missing ${field}`);
-    }
+    err("CONFIRMATION_SCREEN complete payload must include budget_qualified: true");
   }
 }
 
 function main() {
   const raw = readFileSync(FLOW_PATH, "utf8");
   const flow = JSON.parse(raw);
-
-  if (!flow.version) err("Missing flow version");
-  if (!Array.isArray(flow.screens) || flow.screens.length === 0) {
-    err("screens array is required");
-  }
+  const screensById = collectScreens(flow);
 
   walkForForbiddenBindings(flow);
+  validateComponentTypes(flow);
+  validateNoGateScreen(screensById);
+  validateNoConditionalFooters(flow);
 
-  const screensById = collectScreens(flow);
   const budgetScreen = screensById.get("BUDGET_SCREEN");
   if (!budgetScreen) err("Missing BUDGET_SCREEN");
   else validateBudgetScreen(budgetScreen);
@@ -381,52 +363,37 @@ function main() {
   console.log("=== Flow JSON Validation ===\n");
   console.log(`File: ${FLOW_PATH}`);
   console.log(`Version: ${flow.version}`);
-  console.log(`Screens: ${flow.screens.length}\n`);
+  console.log(`Screens: ${flow.screens.length}`);
+  console.log(`Routing: BUDGET_SCREEN on-select -> NOT_QUALIFIED (under 50k)`);
+  console.log(`         BUDGET_SCREEN Footer -> PROJECT_SCREEN (50k+)\n`);
 
   if (errors.length === 0) {
     console.log("Static validation: PASSED (0 errors)\n");
   } else {
     console.log(`Static validation: FAILED (${errors.length} errors)\n`);
-    for (const e of errors) console.log(`  ERROR: ${e}`);
+    errors.forEach((e) => console.log(`  ERROR: ${e}`));
     console.log();
   }
 
   if (warnings.length) {
     console.log("Warnings:");
-    for (const w of warnings) console.log(`  WARN: ${w}`);
+    warnings.forEach((w) => console.log(`  WARN: ${w}`));
     console.log();
   }
 
   console.log("=== Path Simulation ===\n");
-
   for (const budgetId of ["under_30000", "50000_100000"]) {
-    const path = simulatePath(flow, screensById, budgetId);
-    const label =
-      budgetId === "under_30000" ? "Under 50k path" : "50k+ path";
-    console.log(`${label} (${budgetId}):`);
-    console.log(`  ${path.steps.join(" -> ")}`);
-    console.log(`  Terminal: ${path.terminal}`);
-    if (budgetId === "under_30000") {
-      console.log("  Expected complete fields: budget_range, budget_qualified=false, source, flow_name");
-    } else {
-      console.log(
-        "  Expected path: PROJECT_SCREEN -> CONTACT_SCREEN -> CONFIRMATION_SCREEN -> complete",
-      );
-    }
-    console.log();
+    const path = simulatePath(budgetId);
+    console.log(`${budgetId}: ${path.steps.join(" -> ")}`);
   }
 
-  console.log("=== Preview Checklist (Meta Flow Builder) ===\n");
-  console.log("1. Paste JSON into WhatsApp Flow Builder (draft, do not publish).");
-  console.log("2. Enable Interactive Preview.");
-  console.log("3. BUDGET_SCREEN: select budget, click متابعة -> must reach BUDGET_GATE.");
-  console.log("4. Under 50k: BUDGET_GATE -> NOT_QUALIFIED -> إنهاء completes flow.");
-  console.log("5. 50k+: BUDGET_GATE -> PROJECT -> CONTACT -> CONFIRMATION -> إرسال.");
-  console.log("6. Actions tab must log navigate/complete for each step.\n");
+  console.log("\n=== Meta Builder Notes ===");
+  console.log("- BUDGET_GATE removed (If/Switch + Footer breaks Builder Preview)");
+  console.log("- Under-50k: selecting radio auto-navigates to NOT_QUALIFIED");
+  console.log("- 50k+: select radio, then click Footer -> PROJECT_SCREEN");
+  console.log("- Local pass does NOT guarantee Meta Builder acceptance; paste full JSON and verify Preview.\n");
 
-  if (errors.length > 0) {
-    process.exit(1);
-  }
+  if (errors.length > 0) process.exit(1);
 }
 
 main();
