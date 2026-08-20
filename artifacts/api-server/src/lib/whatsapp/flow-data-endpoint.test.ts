@@ -89,9 +89,8 @@ describe("handleDecryptedFlowDataRequest", () => {
     const response = handleDecryptedFlowDataRequest({
       version: FLOW_DATA_API_VERSION,
       action: "ping",
-      flow_token: "token",
     });
-    expect(response.data).toEqual({ status: "active" });
+    expect(response).toEqual({ data: { status: "active" } });
   });
 
   it("rejects invalid flow_token", () => {

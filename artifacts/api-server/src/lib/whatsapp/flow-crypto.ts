@@ -117,6 +117,29 @@ function flipInitializationVector(iv: Buffer): Buffer {
   return flipped;
 }
 
+/** Decrypt an endpoint response (same AES key + flipped IV as Meta client). */
+export function decryptFlowResponse(
+  encryptedBase64: string,
+  aesKey: Buffer,
+  requestInitialVector: Buffer,
+): Record<string, unknown> {
+  const flippedIv = flipInitializationVector(requestInitialVector);
+  const buf = Buffer.from(encryptedBase64, "base64");
+  if (buf.length <= AES_GCM_TAG_LENGTH) {
+    throw new FlowCryptoError("Encrypted response too short");
+  }
+  const ciphertext = buf.subarray(0, -AES_GCM_TAG_LENGTH);
+  const authTag = buf.subarray(-AES_GCM_TAG_LENGTH);
+  const decipher = crypto.createDecipheriv("aes-128-gcm", aesKey, flippedIv);
+  decipher.setAuthTag(authTag);
+  const decryptedBytes = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  const parsed = JSON.parse(decryptedBytes.toString("utf8")) as unknown;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new FlowCryptoError("Decrypted response is not a JSON object");
+  }
+  return parsed as Record<string, unknown>;
+}
+
 /** Encrypt a Flow Data Endpoint response for Meta (returns base64 plaintext body). */
 export function encryptFlowResponse(
   response: Record<string, unknown>,

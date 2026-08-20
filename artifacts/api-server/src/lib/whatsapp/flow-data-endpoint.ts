@@ -92,8 +92,8 @@ export function handleDecryptedFlowDataRequest(
   }
 
   if (action === "ping") {
+    // Meta health-check spec: response contains only data.status (no version/screen).
     return {
-      version: FLOW_DATA_API_VERSION,
       data: { status: "active" },
     };
   }
