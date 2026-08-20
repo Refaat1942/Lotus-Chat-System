@@ -1,13 +1,6 @@
 # Fratelanza Lead Qualification — Meta WhatsApp Flow JSON
 
-Static Flow definition for Meta WhatsApp Manager. Import as **draft only** (do not publish from this repo).
-
-## Files
-
-| File | Purpose |
-|------|---------|
-| `fratelanza-lead-qualification.flow.json` | Full Flow JSON (version 6.0) |
-| `validate-flow.mjs` | Local structural validation + path simulation |
+Endpoint-powered Flow definition for Meta WhatsApp Manager (draft only).
 
 ## Validate locally
 
@@ -15,46 +8,74 @@ Static Flow definition for Meta WhatsApp Manager. Import as **draft only** (do n
 node deploy/whatsapp-flows/validate-flow.mjs
 ```
 
-## Import into Meta Flow Builder
+## Routing design (Meta-documented)
 
-1. Open [WhatsApp Flows](https://business.facebook.com/wa/manage/flows/) in Meta Business Manager.
-2. Create or edit the Fratelanza Lead Qualification flow (keep in **Draft**).
-3. Replace the JSON with the contents of `fratelanza-lead-qualification.flow.json`.
-4. Confirm **0 validation errors** in the Builder.
-5. Enable **Interactive Preview** and walk both paths (see below).
+Pure static client-side branching from one 5-option screen is **not** supported in Meta Flow Builder v6.0 without:
 
-## Routing design
+- `If` / `Switch` + `Footer` (Builder Preview breaks), or
+- `on-select-action: navigate` on radio items (rejected for this project)
 
-### BUDGET_SCREEN (fixed)
+The supported pattern is **Footer → `data_exchange`** on `BUDGET_SCREEN`, with the **Flow Data Endpoint** choosing the next screen. All other transitions use static `navigate` or terminal `complete`.
 
-- Single `Form` with `RadioButtonsGroup` `name="budget_range"` and one `Footer` **inside the Form** (not inside `If`).
-- Footer navigates to `BUDGET_GATE` with payload: `budget_range`, static `source`, static `flow_name`.
-- No `${form.budget_qualified}` anywhere.
+| Budget | Mechanism | Destination |
+|--------|-----------|-------------|
+| `under_30000`, `30000_49999` | Footer → `data_exchange` → endpoint | `NOT_QUALIFIED` (terminal, `complete`) |
+| `50000_100000`, `100000_250000`, `250000_plus` | Footer → `data_exchange` → endpoint | `PROJECT_SCREEN` → `CONTACT_SCREEN` → `CONFIRMATION_SCREEN` |
 
-### BUDGET_GATE (conditional routing)
+Configure `endpoint_uri` on the Flow via **Flows API** or **Flow Builder** (not inside Flow JSON for v6.0). Set `data_api_version: "3.0"` in the JSON.
 
-Meta does not support a dynamic `navigate.next` from a single Footer. Branching uses a dedicated gate screen:
+## Endpoint contract (BUDGET_SCREEN)
 
-- Condition uses **`${data.budget_range}`** (screen data from the previous `navigate` payload), not live form bindings.
-- **Under 50,000** (`under_30000`, `30000_49999`) → `NOT_QUALIFIED` (terminal).
-- **50,000+** (`50000_100000`, `100000_250000`, `250000_plus`) → `PROJECT_SCREEN` → `CONTACT_SCREEN` → `CONFIRMATION_SCREEN` (terminal).
+**Request** (decrypted `data_exchange` payload from Meta):
 
-### Completion payloads
+```json
+{
+  "version": "3.0",
+  "action": "data_exchange",
+  "screen": "BUDGET_SCREEN",
+  "data": {
+    "budget_range": "under_30000",
+    "source": "whatsapp_flow",
+    "flow_name": "Fratelanza Lead Qualification"
+  },
+  "flow_token": "<from Meta>"
+}
+```
 
-| Path | Screen | `budget_qualified` |
-|------|--------|-------------------|
-| Under 50k | `NOT_QUALIFIED` | static `false` |
-| 50k+ | `CONFIRMATION_SCREEN` | static `true` |
+**Response** — under 50k (`under_30000`, `30000_49999`):
 
-Backend derives qualification from `budget_range`; client boolean is informational only.
+```json
+{
+  "version": "3.0",
+  "screen": "NOT_QUALIFIED",
+  "data": {
+    "budget_range": "under_30000",
+    "source": "whatsapp_flow",
+    "flow_name": "Fratelanza Lead Qualification"
+  }
+}
+```
 
-## Preview test matrix
+**Response** — 50k+ (`50000_100000`, `100000_250000`, `250000_plus`):
 
-| Step | Under 50k | 50k+ |
-|------|-----------|------|
-| 1 | Select `under_30000` or `30000_49999` | Select `50000_100000` or higher |
-| 2 | BUDGET_SCREEN → متابعة | BUDGET_SCREEN → متابعة |
-| 3 | BUDGET_GATE → متابعة | BUDGET_GATE → متابعة |
-| 4 | NOT_QUALIFIED → إنهاء (complete) | PROJECT → CONTACT → CONFIRMATION → إرسال |
+```json
+{
+  "version": "3.0",
+  "screen": "PROJECT_SCREEN",
+  "data": {
+    "budget_range": "50000_100000",
+    "source": "whatsapp_flow",
+    "flow_name": "Fratelanza Lead Qualification"
+  }
+}
+```
 
-Check the Builder **Actions** tab: each Footer click should log `navigate` or `complete`.
+On invalid `budget_range`, return the same screen with `error_message` in `data` (Meta shows a snackbar).
+
+Flow completion (`NOT_QUALIFIED`, `CONFIRMATION_SCREEN`) uses static **`complete`** actions — no endpoint call. Existing **`nfm_reply`** webhook handling applies unchanged.
+
+## Import
+
+1. Paste `fratelanza-lead-qualification.flow.json` into WhatsApp Flow Builder as **draft**.
+2. Configure the Flow **endpoint URI** and encryption keys in Builder / Flows API.
+3. Confirm **0 Flow JSON Errors** and test Preview with endpoint reachable.

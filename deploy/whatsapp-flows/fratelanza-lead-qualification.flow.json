@@ -1,5 +1,6 @@
 {
   "version": "6.0",
+  "data_api_version": "3.0",
   "routing_model": {
     "BUDGET_SCREEN": ["NOT_QUALIFIED", "PROJECT_SCREEN"],
     "NOT_QUALIFIED": [],
@@ -20,7 +21,7 @@
           },
           {
             "type": "TextBody",
-            "text": "اختر النطاق الأقرب لتقدير ميزانية مشروعك بالجنيه المصري. إذا كانت ميزانيتك أقل من 50,000 جنيه، سيتم توجيهك مباشرة. وإذا كانت 50,000 جنيه أو أكثر، اضغط متابعة."
+            "text": "اختر النطاق الأقرب لتقدير ميزانية مشروعك بالجنيه المصري."
           },
           {
             "type": "Form",
@@ -34,35 +35,11 @@
                 "data-source": [
                   {
                     "id": "under_30000",
-                    "title": "أقل من 30,000 جنيه",
-                    "on-select-action": {
-                      "name": "navigate",
-                      "next": {
-                        "type": "screen",
-                        "name": "NOT_QUALIFIED"
-                      },
-                      "payload": {
-                        "budget_range": "under_30000",
-                        "source": "whatsapp_flow",
-                        "flow_name": "Fratelanza Lead Qualification"
-                      }
-                    }
+                    "title": "أقل من 30,000 جنيه"
                   },
                   {
                     "id": "30000_49999",
-                    "title": "30,000 – 49,999 جنيه",
-                    "on-select-action": {
-                      "name": "navigate",
-                      "next": {
-                        "type": "screen",
-                        "name": "NOT_QUALIFIED"
-                      },
-                      "payload": {
-                        "budget_range": "30000_49999",
-                        "source": "whatsapp_flow",
-                        "flow_name": "Fratelanza Lead Qualification"
-                      }
-                    }
+                    "title": "30,000 – 49,999 جنيه"
                   },
                   {
                     "id": "50000_100000",
@@ -82,11 +59,7 @@
                 "type": "Footer",
                 "label": "متابعة",
                 "on-click-action": {
-                  "name": "navigate",
-                  "next": {
-                    "type": "screen",
-                    "name": "PROJECT_SCREEN"
-                  },
+                  "name": "data_exchange",
                   "payload": {
                     "budget_range": "${form.budget_range}",
                     "source": "whatsapp_flow",

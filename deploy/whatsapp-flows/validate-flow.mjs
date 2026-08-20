@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Structural validator for Fratelanza Meta WhatsApp Flow JSON.
- * Checks Meta Builder-safe patterns (no If/Switch gate routing).
+ * Enforces Meta Builder-safe endpoint routing (data_exchange on BUDGET_SCREEN).
  */
 
 import { readFileSync } from "node:fs";
@@ -26,6 +26,8 @@ const QUALIFIED_BUDGET_IDS = new Set([
 ]);
 
 const UNQUALIFIED_BUDGET_IDS = new Set(["under_30000", "30000_49999"]);
+
+const BUDGET_GATE_TARGETS = new Set(["NOT_QUALIFIED", "PROJECT_SCREEN"]);
 
 const ALLOWED_COMPONENT_TYPES = new Set([
   "TextHeading",
@@ -87,7 +89,7 @@ function collectNavigateActions(screen) {
     }
     if (node.type === "RadioButtonsGroup") {
       for (const opt of node["data-source"] ?? []) {
-        if (opt["on-select-action"]?.name === "navigate") {
+        if (opt["on-select-action"]) {
           actions.push({
             screen: screen.id,
             path: `${path}.data-source.${opt.id}`,
@@ -150,6 +152,28 @@ function walkForForbiddenBindings(obj, path = "root") {
   }
 }
 
+function validateEndpointMetadata(flow) {
+  if (flow.data_api_version !== "3.0") {
+    err('data_api_version must be "3.0" for data_exchange routing');
+  }
+
+  const model = flow.routing_model ?? {};
+  const budgetEdges = model.BUDGET_SCREEN ?? [];
+  if (budgetEdges.length !== 2) {
+    err("routing_model.BUDGET_SCREEN must declare exactly two destinations");
+  }
+  for (const dest of budgetEdges) {
+    if (!BUDGET_GATE_TARGETS.has(dest)) {
+      err(`routing_model.BUDGET_SCREEN must only target NOT_QUALIFIED or PROJECT_SCREEN (found ${dest})`);
+    }
+  }
+  for (const target of BUDGET_GATE_TARGETS) {
+    if (!budgetEdges.includes(target)) {
+      err(`routing_model.BUDGET_SCREEN missing required edge to ${target}`);
+    }
+  }
+}
+
 function validateComponentTypes(flow) {
   for (const screen of flow.screens) {
     walkComponents(screen.layout, (node, path) => {
@@ -161,9 +185,7 @@ function validateComponentTypes(flow) {
         warn(`${screen.id}: uncommon component type "${node.type}" at ${path}`);
       }
       if (node.type === "If" || node.type === "Switch") {
-        warn(
-          `${screen.id}: ${node.type} at ${path} — Meta Builder may reject conditional routing; prefer on-select-action`,
-        );
+        err(`${screen.id}: ${node.type} at ${path} is forbidden — use data_exchange endpoint routing`);
       }
     });
   }
@@ -192,8 +214,8 @@ function validateBudgetScreen(screen) {
   if (screen.id !== "BUDGET_SCREEN") return;
 
   let radioName = null;
-  let footerNavigateTarget = null;
-  const optionActions = new Map();
+  let footerAction = null;
+  const optionActions = [];
 
   walkComponents(screen.layout, (node) => {
     if (node.type === "RadioButtonsGroup") {
@@ -203,19 +225,12 @@ function validateBudgetScreen(screen) {
           err(`Unknown budget_range option id: ${opt.id}`);
         }
         if (opt["on-select-action"]) {
-          optionActions.set(opt.id, opt["on-select-action"]);
+          optionActions.push({ id: opt.id, action: opt["on-select-action"] });
         }
       }
     }
     if (node.type === "Footer") {
-      const action = node["on-click-action"];
-      if (action?.name === "navigate") {
-        footerNavigateTarget = action.next?.name;
-        const payload = action.payload ?? {};
-        if (payload.budget_range !== "${form.budget_range}") {
-          err("BUDGET_SCREEN Footer payload must use budget_range: ${form.budget_range}");
-        }
-      }
+      footerAction = node["on-click-action"];
     }
   });
 
@@ -232,28 +247,29 @@ function validateBudgetScreen(screen) {
     err(`RadioButtonsGroup name must be budget_range (found ${radioName})`);
   }
 
-  if (footerNavigateTarget !== "PROJECT_SCREEN") {
-    err(`BUDGET_SCREEN Footer must navigate to PROJECT_SCREEN (found ${footerNavigateTarget})`);
-  }
-
-  for (const id of UNQUALIFIED_BUDGET_IDS) {
-    const action = optionActions.get(id);
-    if (!action || action.name !== "navigate") {
-      err(`BUDGET_SCREEN option ${id} must on-select navigate to NOT_QUALIFIED`);
-      continue;
-    }
-    if (action.next?.name !== "NOT_QUALIFIED") {
-      err(`BUDGET_SCREEN option ${id} must navigate to NOT_QUALIFIED`);
-    }
-    if (action.payload?.budget_range !== id) {
-      err(`BUDGET_SCREEN option ${id} payload budget_range must be static "${id}"`);
+  if (optionActions.length > 0) {
+    for (const { id, action } of optionActions) {
+      if (action.name === "navigate") {
+        err(`BUDGET_SCREEN option ${id} must not use on-select-action navigate`);
+      } else {
+        err(`BUDGET_SCREEN option ${id} must not use on-select-action (use Footer data_exchange)`);
+      }
     }
   }
 
-  for (const id of QUALIFIED_BUDGET_IDS) {
-    if (optionActions.has(id)) {
-      err(`BUDGET_SCREEN option ${id} must not use on-select-action (use Footer instead)`);
-    }
+  if (!footerAction || footerAction.name !== "data_exchange") {
+    err(`BUDGET_SCREEN Footer must use data_exchange (found ${footerAction?.name})`);
+  }
+
+  const payload = footerAction?.payload ?? {};
+  if (payload.budget_range !== "${form.budget_range}") {
+    err("BUDGET_SCREEN Footer payload must use budget_range: ${form.budget_range}");
+  }
+  if (payload.source !== "whatsapp_flow") {
+    err('BUDGET_SCREEN Footer payload must include source: "whatsapp_flow"');
+  }
+  if (payload.flow_name !== "Fratelanza Lead Qualification") {
+    err('BUDGET_SCREEN Footer payload must include flow_name: "Fratelanza Lead Qualification"');
   }
 }
 
@@ -305,7 +321,7 @@ function validateRoutingModel(flow, screensById) {
 }
 
 function simulatePath(budgetId) {
-  const steps = ["BUDGET_SCREEN"];
+  const steps = ["BUDGET_SCREEN", "endpoint:data_exchange"];
 
   if (UNQUALIFIED_BUDGET_IDS.has(budgetId)) {
     steps.push("NOT_QUALIFIED");
@@ -348,6 +364,7 @@ function main() {
   const screensById = collectScreens(flow);
 
   walkForForbiddenBindings(flow);
+  validateEndpointMetadata(flow);
   validateComponentTypes(flow);
   validateNoGateScreen(screensById);
   validateNoConditionalFooters(flow);
@@ -363,9 +380,11 @@ function main() {
   console.log("=== Flow JSON Validation ===\n");
   console.log(`File: ${FLOW_PATH}`);
   console.log(`Version: ${flow.version}`);
+  console.log(`Data API: ${flow.data_api_version}`);
   console.log(`Screens: ${flow.screens.length}`);
-  console.log(`Routing: BUDGET_SCREEN on-select -> NOT_QUALIFIED (under 50k)`);
-  console.log(`         BUDGET_SCREEN Footer -> PROJECT_SCREEN (50k+)\n`);
+  console.log("Routing: BUDGET_SCREEN Footer -> data_exchange -> endpoint");
+  console.log("         endpoint -> NOT_QUALIFIED (under 50k) | PROJECT_SCREEN (50k+)");
+  console.log("         PROJECT_SCREEN -> CONTACT_SCREEN -> CONFIRMATION_SCREEN (navigate)\n");
 
   if (errors.length === 0) {
     console.log("Static validation: PASSED (0 errors)\n");
@@ -387,11 +406,11 @@ function main() {
     console.log(`${budgetId}: ${path.steps.join(" -> ")}`);
   }
 
-  console.log("\n=== Meta Builder Notes ===");
-  console.log("- BUDGET_GATE removed (If/Switch + Footer breaks Builder Preview)");
-  console.log("- Under-50k: selecting radio auto-navigates to NOT_QUALIFIED");
-  console.log("- 50k+: select radio, then click Footer -> PROJECT_SCREEN");
-  console.log("- Local pass does NOT guarantee Meta Builder acceptance; paste full JSON and verify Preview.\n");
+  console.log("\n=== Meta Builder Requirements ===");
+  console.log("- Configure endpoint_uri on the Flow via Flows API or Builder (not in JSON for v6.0)");
+  console.log("- Endpoint must handle encrypted data_exchange on BUDGET_SCREEN");
+  console.log("- Builder Preview for data_exchange requires a reachable configured endpoint");
+  console.log("- Terminals still use static complete -> existing nfm_reply webhook\n");
 
   if (errors.length > 0) process.exit(1);
 }
