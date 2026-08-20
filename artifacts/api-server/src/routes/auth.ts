@@ -10,13 +10,14 @@ const router = Router();
 
 router.post("/auth/login", async (req, res) => {
   const { email, password } = req.body;
+  const username = typeof email === "string" ? email.trim() : "";
 
-  if (!email || !password) {
-    res.status(400).json({ error: "Email and password are required" });
+  if (!username || !password) {
+    res.status(400).json({ error: "Username and password are required" });
     return;
   }
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, username));
   if (!user) {
     res.status(401).json({ error: "Invalid credentials" });
     return;

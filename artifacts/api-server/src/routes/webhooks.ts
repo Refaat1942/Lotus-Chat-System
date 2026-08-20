@@ -1,19 +1,31 @@
 import { Router } from "express";
+import type { Express, Request } from "express";
+import type { Server as IOServer } from "socket.io";
 import { db } from "@workspace/db";
 import {
   customersTable,
   conversationsTable,
   messagesTable,
 } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
-import type { Server as IOServer } from "socket.io";
-import type { Express } from "express";
+import { and, eq } from "drizzle-orm";
+import { logger } from "../lib/logger";
+import { handleFlowDataEndpointRequest } from "../lib/whatsapp/flow-data-endpoint";
+import { verifyMetaWebhookSignature } from "../lib/whatsapp/signature";
+import {
+  processMetaWhatsAppWebhook,
+  verifyMetaWebhookSubscription,
+} from "../lib/whatsapp/webhook-handler";
+import type { MetaWebhookPayload } from "../lib/whatsapp/types";
 
 const router = Router();
 
-type Provider = "whatsapp" | "messenger" | "instagram";
+export interface RequestWithRawBody extends Request {
+  rawBody?: Buffer;
+}
 
-interface InboundPayload {
+type LegacyProvider = "messenger" | "instagram";
+
+interface LegacyInboundPayload {
   from?: string;
   phone?: string;
   name?: string;
@@ -22,9 +34,9 @@ interface InboundPayload {
   externalId?: string;
 }
 
-async function ingestInbound(
-  provider: Provider,
-  payload: InboundPayload,
+async function ingestLegacyInbound(
+  provider: LegacyProvider,
+  payload: LegacyInboundPayload,
   io?: IOServer,
 ) {
   const phone = String(payload.phone ?? payload.from ?? "").trim();
@@ -95,6 +107,7 @@ async function ingestInbound(
       senderType: "customer",
       body,
       status: "delivered",
+      externalId: payload.externalId?.trim() || null,
     })
     .returning();
 
@@ -102,30 +115,115 @@ async function ingestInbound(
     io.to(`conv:${conv.id}`).emit("new_message", message);
   }
 
-  return { customerId: customer.id, conversationId: conv.id, messageId: message.id };
+  return {
+    customerId: customer.id,
+    conversationId: conv.id,
+    messageId: message.id,
+  };
 }
 
-function verifyWebhookSecret(req: { headers: Record<string, unknown> }): boolean {
+function verifyLegacyWebhookSecret(req: Request): boolean {
   const secret = process.env.WEBHOOK_SECRET;
   if (!secret) return true;
   return req.headers["x-webhook-secret"] === secret;
 }
 
+function getIo(req: Request): IOServer | undefined {
+  return (req as unknown as { app: Express }).app.get("io") as IOServer | undefined;
+}
+
+/** Meta Cloud API webhook verification (GET). */
+router.get("/webhooks/whatsapp", (req, res) => {
+  const challenge = verifyMetaWebhookSubscription(req.query as Record<string, unknown>);
+  if (challenge) {
+    res.status(200).type("text/plain").send(challenge);
+    return;
+  }
+  res.status(403).json({ error: "Forbidden" });
+});
+
+/**
+ * Meta WhatsApp Flow Data Endpoint (POST).
+ * Encrypted data_exchange for endpoint-powered flows — separate from nfm_reply webhook.
+ */
+router.post("/webhooks/whatsapp/flow", (req, res) => {
+  const rawBody = (req as RequestWithRawBody).rawBody;
+  const signature = req.headers["x-hub-signature-256"];
+
+  const result = handleFlowDataEndpointRequest({
+    encryptedBody: req.body as {
+      encrypted_flow_data: string;
+      encrypted_aes_key: string;
+      initial_vector: string;
+    },
+    rawBody,
+    signatureHeader: typeof signature === "string" ? signature : undefined,
+  });
+
+  res.status(result.statusCode);
+  if (result.body) {
+    res.type(result.contentType).send(result.body);
+    return;
+  }
+  res.end();
+});
+
+/** Meta Cloud API inbound events (POST). */
+router.post("/webhooks/whatsapp", async (req, res) => {
+  const rawBody = (req as RequestWithRawBody).rawBody;
+  const signature = req.headers["x-hub-signature-256"];
+  const appSecret = process.env.WHATSAPP_APP_SECRET;
+
+  if (appSecret?.trim()) {
+    const valid = verifyMetaWebhookSignature(
+      rawBody,
+      typeof signature === "string" ? signature : undefined,
+      appSecret,
+    );
+    if (!valid) {
+      logger.warn("WhatsApp webhook rejected: invalid signature");
+      res.status(403).json({ error: "Invalid signature" });
+      return;
+    }
+  }
+
+  try {
+    const io = getIo(req);
+    const stats = await processMetaWhatsAppWebhook(req.body as MetaWebhookPayload, io);
+    res.status(200).json({ ok: true, ...stats });
+  } catch (err) {
+    logger.error({ err }, "WhatsApp webhook processing failed");
+    res.status(500).json({ error: "Webhook processing failed" });
+  }
+});
+
+/** Legacy generic webhook for messenger / instagram (backward compatible). */
 router.post("/webhooks/:provider", async (req, res) => {
-  if (!verifyWebhookSecret(req)) {
+  const provider = req.params.provider as string;
+
+  if (provider === "whatsapp") {
+    res.status(400).json({ error: "Use POST /api/webhooks/whatsapp for WhatsApp" });
+    return;
+  }
+
+  if (!verifyLegacyWebhookSecret(req)) {
     res.status(401).json({ error: "Invalid webhook secret" });
     return;
   }
 
-  const provider = req.params.provider as Provider;
-  if (!["whatsapp", "messenger", "instagram"].includes(provider)) {
+  if (!["messenger", "instagram"].includes(provider)) {
     res.status(400).json({ error: "Unknown provider" });
     return;
   }
 
   try {
-    const io = (req as unknown as { app: Express }).app.get("io") as IOServer | undefined;
-    const result = await ingestInbound(provider, req.body as InboundPayload, io);
+    const io = getIo(req);
+    const result = await ingestLegacyInbound(
+      provider as LegacyProvider,
+      req.body as LegacyInboundPayload,
+      io,
+    );
+
     res.status(201).json({ ok: true, ...result });
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : "Invalid payload" });

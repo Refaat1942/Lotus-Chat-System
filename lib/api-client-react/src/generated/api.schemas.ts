@@ -14,6 +14,7 @@ export interface ErrorResponse {
 }
 
 export interface LoginBody {
+  /** Login username (stored in the email column for legacy compatibility) */
   email: string;
   password: string;
 }

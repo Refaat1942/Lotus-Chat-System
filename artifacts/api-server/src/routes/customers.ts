@@ -37,7 +37,22 @@ router.get("/customers", requireAuth, async (req, res) => {
 });
 
 router.post("/customers", requireAuth, requirePermission("canManageCustomers"), async (req, res) => {
-  const { name, phone, branch, address, tags, notes, prescriptionNotes } = req.body;
+  const {
+    name,
+    phone,
+    branch,
+    address,
+    tags,
+    notes,
+    prescriptionNotes,
+    budgetQualified,
+    budgetRange,
+    projectType,
+    projectDescription,
+    companyName,
+    leadSource,
+    flowName,
+  } = req.body;
   // Stronger validation — names need to be non-empty, phones need to look
   // like a phone (7+ digits, allow + - space ()). Prevents junk records.
   const nameStr = typeof name === "string" ? name.trim() : "";
@@ -63,6 +78,13 @@ router.post("/customers", requireAuth, requirePermission("canManageCustomers"), 
     tags: Array.isArray(tags) ? tags : [],
     notes: notes || null,
     prescriptionNotes: prescriptionNotes || null,
+    budgetQualified: budgetQualified ?? null,
+    budgetRange: budgetRange || null,
+    projectType: projectType || null,
+    projectDescription: projectDescription || null,
+    companyName: companyName || null,
+    leadSource: leadSource || null,
+    flowName: flowName || null,
   }).returning();
   res.status(201).json(customer);
 });
@@ -76,7 +98,22 @@ router.get("/customers/:id", requireAuth, async (req, res) => {
 
 router.put("/customers/:id", requireAuth, requirePermission("canManageCustomers"), async (req, res) => {
   const id = Number(req.params.id);
-  const { name, phone, branch, address, tags, notes, prescriptionNotes } = req.body;
+  const {
+    name,
+    phone,
+    branch,
+    address,
+    tags,
+    notes,
+    prescriptionNotes,
+    budgetQualified,
+    budgetRange,
+    projectType,
+    projectDescription,
+    companyName,
+    leadSource,
+    flowName,
+  } = req.body;
   const updates: Record<string, unknown> = {};
   if (name !== undefined) updates.name = name;
   if (phone !== undefined) updates.phone = phone;
@@ -85,6 +122,13 @@ router.put("/customers/:id", requireAuth, requirePermission("canManageCustomers"
   if (tags !== undefined) updates.tags = tags;
   if (notes !== undefined) updates.notes = notes;
   if (prescriptionNotes !== undefined) updates.prescriptionNotes = prescriptionNotes;
+  if (budgetQualified !== undefined) updates.budgetQualified = budgetQualified;
+  if (budgetRange !== undefined) updates.budgetRange = budgetRange;
+  if (projectType !== undefined) updates.projectType = projectType;
+  if (projectDescription !== undefined) updates.projectDescription = projectDescription;
+  if (companyName !== undefined) updates.companyName = companyName;
+  if (leadSource !== undefined) updates.leadSource = leadSource;
+  if (flowName !== undefined) updates.flowName = flowName;
   const [customer] = await db.update(customersTable).set(updates).where(eq(customersTable.id, id)).returning();
   if (!customer) { res.status(404).json({ error: "Not found" }); return; }
   res.json(customer);
@@ -143,6 +187,13 @@ router.get("/customers/:id/conversations", requireAuth, async (req, res) => {
       tags: customersTable.tags,
       notes: customersTable.notes,
       prescriptionNotes: customersTable.prescriptionNotes,
+      budgetQualified: customersTable.budgetQualified,
+      budgetRange: customersTable.budgetRange,
+      projectType: customersTable.projectType,
+      projectDescription: customersTable.projectDescription,
+      companyName: customersTable.companyName,
+      leadSource: customersTable.leadSource,
+      flowName: customersTable.flowName,
       createdAt: customersTable.createdAt,
     },
   }).from(conversationsTable)

@@ -1,10 +1,14 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import path from "path";
 import fs from "fs";
 import router from "./routes";
 import { logger } from "./lib/logger";
+
+export interface RequestWithRawBody extends Request {
+  rawBody?: Buffer;
+}
 
 const app: Express = express();
 
@@ -28,9 +32,15 @@ app.use(
   }),
 );
 app.use(cors());
-// Bumped from default 100kb so branding logo data-URLs (up to ~700KB
-// after base64 encoding) can be saved via PUT /api/settings.
-app.use(express.json({ limit: "2mb" }));
+// Preserve raw body for Meta WhatsApp webhook signature validation (HMAC SHA256).
+app.use(
+  express.json({
+    limit: "2mb",
+    verify(req: RequestWithRawBody, _res, buf) {
+      req.rawBody = buf;
+    },
+  }),
+);
 app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 
 app.use("/api", router);

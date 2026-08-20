@@ -1037,7 +1037,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          description: Login username (stored in the email column for legacy compatibility)
         password:
           type: string
       required:

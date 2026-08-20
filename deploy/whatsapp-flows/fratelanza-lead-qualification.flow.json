@@ -1,0 +1,348 @@
+{
+  "version": "6.0",
+  "data_api_version": "3.0",
+  "routing_model": {
+    "BUDGET_SCREEN": ["NOT_QUALIFIED", "PROJECT_SCREEN"],
+    "NOT_QUALIFIED": [],
+    "PROJECT_SCREEN": ["CONTACT_SCREEN"],
+    "CONTACT_SCREEN": ["CONFIRMATION_SCREEN"],
+    "CONFIRMATION_SCREEN": []
+  },
+  "screens": [
+    {
+      "id": "BUDGET_SCREEN",
+      "title": "الميزانية",
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "ما الميزانية المتوقعة لمشروعك؟"
+          },
+          {
+            "type": "TextBody",
+            "text": "اختر النطاق الأقرب لتقدير ميزانية مشروعك بالجنيه المصري."
+          },
+          {
+            "type": "Form",
+            "name": "budget_form",
+            "children": [
+              {
+                "type": "RadioButtonsGroup",
+                "name": "budget_range",
+                "label": "نطاق الميزانية",
+                "required": true,
+                "data-source": [
+                  {
+                    "id": "under_30000",
+                    "title": "أقل من 30,000 جنيه"
+                  },
+                  {
+                    "id": "30000_49999",
+                    "title": "30,000 – 49,999 جنيه"
+                  },
+                  {
+                    "id": "50000_100000",
+                    "title": "50,000 – 100,000 جنيه"
+                  },
+                  {
+                    "id": "100000_250000",
+                    "title": "100,000 – 250,000 جنيه"
+                  },
+                  {
+                    "id": "250000_plus",
+                    "title": "250,000+ جنيه"
+                  }
+                ]
+              },
+              {
+                "type": "Footer",
+                "label": "متابعة",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "budget_range": "${form.budget_range}",
+                    "source": "whatsapp_flow",
+                    "flow_name": "Fratelanza Lead Qualification"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "NOT_QUALIFIED",
+      "title": "غير مؤهل",
+      "terminal": true,
+      "success": true,
+      "data": {
+        "budget_range": {
+          "type": "string",
+          "__example__": "under_30000"
+        },
+        "source": {
+          "type": "string",
+          "__example__": "whatsapp_flow"
+        },
+        "flow_name": {
+          "type": "string",
+          "__example__": "Fratelanza Lead Qualification"
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "شكراً لتواصلك"
+          },
+          {
+            "type": "TextBody",
+            "text": "حالياً نخدم المشاريع التي تبدأ من 50,000 جنيه. سنتواصل معك عند توفر خيارات مناسبة لميزانيتك."
+          },
+          {
+            "type": "Footer",
+            "label": "إنهاء",
+            "on-click-action": {
+              "name": "complete",
+              "payload": {
+                "budget_range": "${data.budget_range}",
+                "budget_qualified": false,
+                "source": "${data.source}",
+                "flow_name": "${data.flow_name}"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "PROJECT_SCREEN",
+      "title": "تفاصيل المشروع",
+      "data": {
+        "budget_range": {
+          "type": "string",
+          "__example__": "50000_100000"
+        },
+        "source": {
+          "type": "string",
+          "__example__": "whatsapp_flow"
+        },
+        "flow_name": {
+          "type": "string",
+          "__example__": "Fratelanza Lead Qualification"
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "أخبرنا عن مشروعك"
+          },
+          {
+            "type": "Form",
+            "name": "project_form",
+            "children": [
+              {
+                "type": "Dropdown",
+                "name": "project_type",
+                "label": "نوع المشروع",
+                "required": true,
+                "data-source": [
+                  {
+                    "id": "retail_fitout",
+                    "title": "تجهيز محل / Retail fit-out"
+                  },
+                  {
+                    "id": "office_fitout",
+                    "title": "تجهيز مكتب"
+                  },
+                  {
+                    "id": "restaurant_cafe",
+                    "title": "مطعم / كافيه"
+                  },
+                  {
+                    "id": "residential",
+                    "title": "سكني"
+                  },
+                  {
+                    "id": "other",
+                    "title": "أخرى"
+                  }
+                ]
+              },
+              {
+                "type": "TextArea",
+                "name": "project_description",
+                "label": "وصف المشروع (اختياري)",
+                "required": false
+              },
+              {
+                "type": "Footer",
+                "label": "متابعة",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "CONTACT_SCREEN"
+                  },
+                  "payload": {
+                    "budget_range": "${data.budget_range}",
+                    "project_type": "${form.project_type}",
+                    "project_description": "${form.project_description}",
+                    "source": "${data.source}",
+                    "flow_name": "${data.flow_name}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "CONTACT_SCREEN",
+      "title": "بيانات التواصل",
+      "data": {
+        "budget_range": {
+          "type": "string",
+          "__example__": "50000_100000"
+        },
+        "project_type": {
+          "type": "string",
+          "__example__": "retail_fitout"
+        },
+        "project_description": {
+          "type": "string",
+          "__example__": ""
+        },
+        "source": {
+          "type": "string",
+          "__example__": "whatsapp_flow"
+        },
+        "flow_name": {
+          "type": "string",
+          "__example__": "Fratelanza Lead Qualification"
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "كيف نتواصل معك؟"
+          },
+          {
+            "type": "Form",
+            "name": "contact_form",
+            "children": [
+              {
+                "type": "TextInput",
+                "name": "customer_name",
+                "label": "الاسم",
+                "required": true,
+                "input-type": "text"
+              },
+              {
+                "type": "TextInput",
+                "name": "company_name",
+                "label": "اسم الشركة (اختياري)",
+                "required": false,
+                "input-type": "text"
+              },
+              {
+                "type": "Footer",
+                "label": "متابعة",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "CONFIRMATION_SCREEN"
+                  },
+                  "payload": {
+                    "budget_range": "${data.budget_range}",
+                    "project_type": "${data.project_type}",
+                    "project_description": "${data.project_description}",
+                    "customer_name": "${form.customer_name}",
+                    "company_name": "${form.company_name}",
+                    "source": "${data.source}",
+                    "flow_name": "${data.flow_name}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "CONFIRMATION_SCREEN",
+      "title": "تأكيد",
+      "terminal": true,
+      "success": true,
+      "data": {
+        "budget_range": {
+          "type": "string",
+          "__example__": "50000_100000"
+        },
+        "project_type": {
+          "type": "string",
+          "__example__": "retail_fitout"
+        },
+        "project_description": {
+          "type": "string",
+          "__example__": "تجهيز فرع جديد"
+        },
+        "customer_name": {
+          "type": "string",
+          "__example__": "Ahmed Refaat"
+        },
+        "company_name": {
+          "type": "string",
+          "__example__": "Fratelanza"
+        },
+        "source": {
+          "type": "string",
+          "__example__": "whatsapp_flow"
+        },
+        "flow_name": {
+          "type": "string",
+          "__example__": "Fratelanza Lead Qualification"
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "مراجعة طلبك"
+          },
+          {
+            "type": "TextBody",
+            "text": "سيتواصل فريقنا معك قريباً لمناقشة مشروعك."
+          },
+          {
+            "type": "Footer",
+            "label": "إرسال",
+            "on-click-action": {
+              "name": "complete",
+              "payload": {
+                "budget_range": "${data.budget_range}",
+                "budget_qualified": true,
+                "project_type": "${data.project_type}",
+                "project_description": "${data.project_description}",
+                "customer_name": "${data.customer_name}",
+                "company_name": "${data.company_name}",
+                "source": "${data.source}",
+                "flow_name": "${data.flow_name}"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
