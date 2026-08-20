@@ -97,52 +97,120 @@
         "type": "SingleColumnLayout",
         "children": [
           {
-            "type": "If",
-            "condition": "(!(${data.budget_range} == 'under_30000')) && (!(${data.budget_range} == '30000_49999'))",
-            "then": [
-              {
-                "type": "TextBody",
-                "text": "ميزانيتك تتوافق مع نطاق مشاريعنا. لنكمل تفاصيل المشروع."
-              },
-              {
-                "type": "Footer",
-                "label": "متابعة",
-                "on-click-action": {
-                  "name": "navigate",
-                  "next": {
-                    "type": "screen",
-                    "name": "PROJECT_SCREEN"
-                  },
-                  "payload": {
-                    "budget_range": "${data.budget_range}",
-                    "source": "${data.source}",
-                    "flow_name": "${data.flow_name}"
+            "type": "Switch",
+            "value": "${data.budget_range}",
+            "cases": {
+              "under_30000": [
+                {
+                  "type": "TextBody",
+                  "text": "شكراً لاهتمامك. ميزانيتك الحالية أقل من الحد الأدنى لمشاريعنا."
+                },
+                {
+                  "type": "Footer",
+                  "label": "متابعة",
+                  "on-click-action": {
+                    "name": "navigate",
+                    "next": {
+                      "type": "screen",
+                      "name": "NOT_QUALIFIED"
+                    },
+                    "payload": {
+                      "budget_range": "${data.budget_range}",
+                      "source": "${data.source}",
+                      "flow_name": "${data.flow_name}"
+                    }
                   }
                 }
-              }
-            ],
-            "else": [
-              {
-                "type": "TextBody",
-                "text": "شكراً لاهتمامك. ميزانيتك الحالية أقل من الحد الأدنى لمشاريعنا."
-              },
-              {
-                "type": "Footer",
-                "label": "متابعة",
-                "on-click-action": {
-                  "name": "navigate",
-                  "next": {
-                    "type": "screen",
-                    "name": "NOT_QUALIFIED"
-                  },
-                  "payload": {
-                    "budget_range": "${data.budget_range}",
-                    "source": "${data.source}",
-                    "flow_name": "${data.flow_name}"
+              ],
+              "30000_49999": [
+                {
+                  "type": "TextBody",
+                  "text": "شكراً لاهتمامك. ميزانيتك الحالية أقل من الحد الأدنى لمشاريعنا."
+                },
+                {
+                  "type": "Footer",
+                  "label": "متابعة",
+                  "on-click-action": {
+                    "name": "navigate",
+                    "next": {
+                      "type": "screen",
+                      "name": "NOT_QUALIFIED"
+                    },
+                    "payload": {
+                      "budget_range": "${data.budget_range}",
+                      "source": "${data.source}",
+                      "flow_name": "${data.flow_name}"
+                    }
                   }
                 }
-              }
-            ]
+              ],
+              "50000_100000": [
+                {
+                  "type": "TextBody",
+                  "text": "ميزانيتك تتوافق مع نطاق مشاريعنا. لنكمل تفاصيل المشروع."
+                },
+                {
+                  "type": "Footer",
+                  "label": "متابعة",
+                  "on-click-action": {
+                    "name": "navigate",
+                    "next": {
+                      "type": "screen",
+                      "name": "PROJECT_SCREEN"
+                    },
+                    "payload": {
+                      "budget_range": "${data.budget_range}",
+                      "source": "${data.source}",
+                      "flow_name": "${data.flow_name}"
+                    }
+                  }
+                }
+              ],
+              "100000_250000": [
+                {
+                  "type": "TextBody",
+                  "text": "ميزانيتك تتوافق مع نطاق مشاريعنا. لنكمل تفاصيل المشروع."
+                },
+                {
+                  "type": "Footer",
+                  "label": "متابعة",
+                  "on-click-action": {
+                    "name": "navigate",
+                    "next": {
+                      "type": "screen",
+                      "name": "PROJECT_SCREEN"
+                    },
+                    "payload": {
+                      "budget_range": "${data.budget_range}",
+                      "source": "${data.source}",
+                      "flow_name": "${data.flow_name}"
+                    }
+                  }
+                }
+              ],
+              "250000_plus": [
+                {
+                  "type": "TextBody",
+                  "text": "ميزانيتك تتوافق مع نطاق مشاريعنا. لنكمل تفاصيل المشروع."
+                },
+                {
+                  "type": "Footer",
+                  "label": "متابعة",
+                  "on-click-action": {
+                    "name": "navigate",
+                    "next": {
+                      "type": "screen",
+                      "name": "PROJECT_SCREEN"
+                    },
+                    "payload": {
+                      "budget_range": "${data.budget_range}",
+                      "source": "${data.source}",
+                      "flow_name": "${data.flow_name}"
+                    }
+                  }
+                }
+              ]
+            }
           }
         ]
       }

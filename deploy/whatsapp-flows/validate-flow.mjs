@@ -289,9 +289,10 @@ function simulatePath(flow, screensById, budgetId) {
   steps.push(current);
 
   const gate = screensById.get("BUDGET_GATE");
-  const qualified =
-    QUALIFIED_BUDGET_IDS.has(budgetId) &&
-    gate.layout?.children?.[0]?.condition?.includes("50000_100000");
+  const gateSwitch = gate?.layout?.children?.find((c) => c.type === "Switch");
+  if (!gateSwitch?.cases) {
+    err("BUDGET_GATE must use Switch on data.budget_range for routing");
+  }
 
   if (QUALIFIED_BUDGET_IDS.has(budgetId)) {
     current = "PROJECT_SCREEN";
