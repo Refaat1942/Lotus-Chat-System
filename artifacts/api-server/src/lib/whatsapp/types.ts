@@ -31,14 +31,23 @@ export interface MetaWebhookContact {
   profile?: { name?: string };
 }
 
-/** Incoming message — text supported now; other types reserved for future media support. */
+/** Incoming message — text and WhatsApp Flow (nfm_reply) supported. */
 export interface MetaIncomingMessage {
   from: string;
   id: string;
   timestamp: string;
   type: string;
   text?: { body: string };
-  // Future: image, document, audio, video, sticker, location, etc.
+  interactive?: MetaIncomingInteractive;
+}
+
+export interface MetaIncomingInteractive {
+  type: string;
+  nfm_reply?: {
+    response_json?: string | Record<string, unknown>;
+    body?: string;
+    name?: string;
+  };
 }
 
 export interface MetaMessageStatus {

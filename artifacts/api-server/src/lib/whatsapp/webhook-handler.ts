@@ -7,6 +7,14 @@ import {
 import { and, eq } from "drizzle-orm";
 import type { Server as IOServer } from "socket.io";
 import { logger } from "../logger";
+import {
+  buildFlowAuditMessage,
+  mergeTags,
+  parseFlowResponseJson,
+  QUALIFIED_50K_PLUS_TAG,
+  validateAndNormalizeFlowFields,
+  type FlowQualificationData,
+} from "./flow-response";
 import { normalizeWhatsAppPhone } from "./phone";
 import type {
   LocalMessageStatus,
@@ -23,11 +31,21 @@ export interface IngestTextMessageInput {
   profileName?: string;
 }
 
+export interface IngestFlowReplyInput {
+  waId: string;
+  wamid: string;
+  responseJson: unknown;
+  metaFlowName?: string;
+  profileName?: string;
+}
+
 export interface WebhookProcessResult {
   messagesProcessed: number;
   statusesProcessed: number;
   duplicatesSkipped: number;
   unsupportedSkipped: number;
+  flowsProcessed: number;
+  flowsSkipped: number;
 }
 
 async function findMessageByExternalId(wamid: string) {
@@ -37,6 +55,86 @@ async function findMessageByExternalId(wamid: string) {
     .where(eq(messagesTable.externalId, wamid))
     .limit(1);
   return row ?? null;
+}
+
+async function findOrCreateWhatsAppCustomer(
+  waId: string,
+  profileName?: string,
+) {
+  const phone = normalizeWhatsAppPhone(waId);
+  if (!phone) {
+    throw new Error("phone is required");
+  }
+
+  let [customer] = await db
+    .select()
+    .from(customersTable)
+    .where(eq(customersTable.phone, phone))
+    .limit(1);
+
+  if (!customer) {
+    [customer] = await db
+      .insert(customersTable)
+      .values({
+        name: profileName?.trim() || phone,
+        phone,
+        tags: ["New"],
+      })
+      .returning();
+  } else if (profileName?.trim() && customer.name === phone) {
+    await db
+      .update(customersTable)
+      .set({ name: profileName.trim() })
+      .where(eq(customersTable.id, customer.id));
+    customer = { ...customer, name: profileName.trim() };
+  }
+
+  return customer;
+}
+
+async function findOrCreateOpenWhatsAppConversation(
+  customerId: number,
+  lastMessage: string,
+) {
+  let [conv] = await db
+    .select()
+    .from(conversationsTable)
+    .where(
+      and(
+        eq(conversationsTable.customerId, customerId),
+        eq(conversationsTable.channel, "whatsapp"),
+        eq(conversationsTable.status, "open"),
+      ),
+    )
+    .limit(1);
+
+  if (!conv) {
+    [conv] = await db
+      .insert(conversationsTable)
+      .values({
+        customerId,
+        channel: "whatsapp",
+        status: "open",
+        lastMessage,
+        lastMessageAt: new Date(),
+        lastSenderType: "customer",
+        unreadCount: 1,
+      })
+      .returning();
+  } else {
+    await db
+      .update(conversationsTable)
+      .set({
+        status: "open",
+        lastMessage,
+        lastMessageAt: new Date(),
+        lastSenderType: "customer",
+        unreadCount: (conv.unreadCount ?? 0) + 1,
+      })
+      .where(eq(conversationsTable.id, conv.id));
+  }
+
+  return conv;
 }
 
 /**
@@ -58,66 +156,8 @@ export async function ingestWhatsAppTextMessage(
     return { duplicate: true as const, message: existing };
   }
 
-  let [customer] = await db
-    .select()
-    .from(customersTable)
-    .where(eq(customersTable.phone, phone))
-    .limit(1);
-
-  if (!customer) {
-    [customer] = await db
-      .insert(customersTable)
-      .values({
-        name: input.profileName?.trim() || phone,
-        phone,
-        tags: ["New"],
-      })
-      .returning();
-  } else if (input.profileName?.trim() && customer.name === phone) {
-    await db
-      .update(customersTable)
-      .set({ name: input.profileName.trim() })
-      .where(eq(customersTable.id, customer.id));
-    customer = { ...customer, name: input.profileName.trim() };
-  }
-
-  let [conv] = await db
-    .select()
-    .from(conversationsTable)
-    .where(
-      and(
-        eq(conversationsTable.customerId, customer.id),
-        eq(conversationsTable.channel, "whatsapp"),
-        eq(conversationsTable.status, "open"),
-      ),
-    )
-    .limit(1);
-
-  if (!conv) {
-    [conv] = await db
-      .insert(conversationsTable)
-      .values({
-        customerId: customer.id,
-        channel: "whatsapp",
-        status: "open",
-        lastMessage: body,
-        lastMessageAt: new Date(),
-        lastSenderType: "customer",
-        unreadCount: 1,
-      })
-      .returning();
-  } else {
-    await db
-      .update(conversationsTable)
-      .set({
-        status: "open",
-        lastMessage: body,
-        lastMessageAt: new Date(),
-        lastSenderType: "customer",
-        unreadCount: (conv.unreadCount ?? 0) + 1,
-      })
-      .where(eq(conversationsTable.id, conv.id));
-  }
+  const customer = await findOrCreateWhatsAppCustomer(input.waId, input.profileName);
+  const conv = await findOrCreateOpenWhatsAppConversation(customer.id, body);
 
   let message;
   try {
@@ -152,6 +192,140 @@ export async function ingestWhatsAppTextMessage(
     customerId: customer.id,
     conversationId: conv.id,
     message,
+  };
+}
+
+function applyFlowQualificationToCustomer(
+  customer: typeof customersTable.$inferSelect,
+  flow: FlowQualificationData,
+) {
+  const tags = flow.budgetQualified
+    ? mergeTags(customer.tags ?? [], [QUALIFIED_50K_PLUS_TAG])
+    : customer.tags ?? [];
+
+  const customerUpdates: Record<string, unknown> = {
+    budgetQualified: flow.budgetQualified,
+    budgetRange: flow.budgetRange,
+    projectType: flow.projectType,
+    projectDescription: flow.projectDescription,
+    companyName: flow.companyName,
+    leadSource: flow.leadSource,
+    flowName: flow.flowName,
+    tags,
+  };
+
+  if (flow.customerName) {
+    customerUpdates.name = flow.customerName;
+  }
+
+  return { customerUpdates, tags };
+}
+
+/**
+ * Ingest a WhatsApp Flow nfm_reply submission. Idempotent on wamid.
+ */
+export async function ingestWhatsAppFlowReply(
+  input: IngestFlowReplyInput,
+  io?: IOServer,
+) {
+  const existing = await findMessageByExternalId(input.wamid);
+  if (existing) {
+    return { duplicate: true as const, message: existing };
+  }
+
+  const parsed = parseFlowResponseJson(input.responseJson);
+  if (!parsed) {
+    throw new Error("invalid flow response_json");
+  }
+
+  const flow = validateAndNormalizeFlowFields(parsed, input.metaFlowName);
+  if (!flow) {
+    throw new Error("flow response failed validation");
+  }
+
+  const customer = await findOrCreateWhatsAppCustomer(input.waId, input.profileName);
+  const auditBody = buildFlowAuditMessage(flow);
+  const conv = await findOrCreateOpenWhatsAppConversation(customer.id, auditBody);
+
+  if (
+    flow.conversationIdFromFlow !== null &&
+    flow.conversationIdFromFlow !== conv.id
+  ) {
+    logger.warn(
+      {
+        flowConversationId: flow.conversationIdFromFlow,
+        linkedConversationId: conv.id,
+        customerId: customer.id,
+      },
+      "Flow conversation_id does not match linked open WhatsApp conversation",
+    );
+  }
+
+  const { customerUpdates, tags: customerTags } = applyFlowQualificationToCustomer(
+    customer,
+    flow,
+  );
+
+  const [updatedCustomer] = await db
+    .update(customersTable)
+    .set(customerUpdates)
+    .where(eq(customersTable.id, customer.id))
+    .returning();
+
+  const conversationTags = flow.budgetQualified
+    ? mergeTags(conv.tags ?? [], [QUALIFIED_50K_PLUS_TAG])
+    : conv.tags ?? [];
+
+  await db
+    .update(conversationsTable)
+    .set({ tags: conversationTags })
+    .where(eq(conversationsTable.id, conv.id))
+    .returning();
+
+  let message;
+  try {
+    [message] = await db
+      .insert(messagesTable)
+      .values({
+        conversationId: conv.id,
+        senderType: "customer",
+        body: auditBody,
+        externalId: input.wamid,
+        status: "delivered",
+      })
+      .returning();
+  } catch (err: unknown) {
+    const pgCode =
+      err && typeof err === "object" && "code" in err
+        ? String((err as { code?: string }).code)
+        : "";
+    if (pgCode === "23505") {
+      const dup = await findMessageByExternalId(input.wamid);
+      if (dup) return { duplicate: true as const, message: dup };
+    }
+    throw err;
+  }
+
+  if (io) {
+    io.to(`conv:${conv.id}`).emit("new_message", message);
+    io.to(`conv:${conv.id}`).emit("flow_submitted", {
+      conversationId: conv.id,
+      customerId: updatedCustomer.id,
+      messageId: message.id,
+      qualified: flow.budgetQualified,
+      budgetRange: flow.budgetRange,
+      projectType: flow.projectType,
+      flowName: flow.flowName,
+      tags: conversationTags,
+    });
+  }
+
+  return {
+    duplicate: false as const,
+    customerId: updatedCustomer.id,
+    conversationId: conv.id,
+    message,
+    flow,
   };
 }
 
@@ -216,6 +390,39 @@ async function handleIncomingMetaMessage(
   io: IOServer | undefined,
   stats: WebhookProcessResult,
 ) {
+  if (
+    msg.type === "interactive" &&
+    msg.interactive?.type === "nfm_reply" &&
+    msg.interactive.nfm_reply
+  ) {
+    try {
+      const result = await ingestWhatsAppFlowReply(
+        {
+          waId: msg.from,
+          wamid: msg.id,
+          responseJson: msg.interactive.nfm_reply.response_json,
+          metaFlowName: msg.interactive.nfm_reply.name,
+          profileName: contactNameForWaId(contacts, msg.from),
+        },
+        io,
+      );
+
+      if (result.duplicate) {
+        stats.duplicatesSkipped += 1;
+      } else {
+        stats.flowsProcessed += 1;
+        stats.messagesProcessed += 1;
+      }
+    } catch (err) {
+      stats.flowsSkipped += 1;
+      logger.warn(
+        { err, wamid: msg.id, from: msg.from },
+        "WhatsApp Flow nfm_reply skipped",
+      );
+    }
+    return;
+  }
+
   if (msg.type !== "text" || !msg.text?.body) {
     stats.unsupportedSkipped += 1;
     logger.debug({ type: msg.type, wamid: msg.id }, "Skipping unsupported WhatsApp message type");
@@ -241,7 +448,7 @@ async function handleIncomingMetaMessage(
 
 /**
  * Process a Meta WhatsApp Cloud API webhook POST body.
- * Handles text messages and delivery/read/failed status updates.
+ * Handles text messages, Flow nfm_reply submissions, and status updates.
  */
 export async function processMetaWhatsAppWebhook(
   payload: MetaWebhookPayload,
@@ -252,6 +459,8 @@ export async function processMetaWhatsAppWebhook(
     statusesProcessed: 0,
     duplicatesSkipped: 0,
     unsupportedSkipped: 0,
+    flowsProcessed: 0,
+    flowsSkipped: 0,
   };
 
   if (payload.object !== "whatsapp_business_account") {

@@ -67,6 +67,17 @@ if [ -f /app/deploy/migrations/001_messages_external_id.sql ]; then
     >/dev/null 2>&1 || echo "(skip — migration may have already applied)"
 fi
 
+# ----- 2g. WhatsApp Flow: customer lead qualification fields -----
+if [ -f /app/deploy/migrations/002_customer_flow_qualification.sql ]; then
+  echo "==> Applying customer flow qualification migration..."
+  PGPASSWORD="${POSTGRES_PASSWORD:-lotus_dev_password_change_me}" psql \
+    -h postgres \
+    -U "${POSTGRES_USER:-lotus}" \
+    -d "${POSTGRES_DB:-lotus}" \
+    -f /app/deploy/migrations/002_customer_flow_qualification.sql \
+    >/dev/null 2>&1 || echo "(skip — migration may have already applied)"
+fi
+
 # ----- 3. Seed runs automatically inside the API server on startup -----
 # The api-server has a built-in idempotent bootstrap-seed that creates demo
 # users + tags + customers + conversations on first boot when the DB is empty.
