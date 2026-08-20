@@ -98,7 +98,7 @@
         "children": [
           {
             "type": "If",
-            "condition": "(${data.budget_range} == '50000_100000') || (${data.budget_range} == '100000_250000') || (${data.budget_range} == '250000_plus')",
+            "condition": "(!(${data.budget_range} == 'under_30000')) && (!(${data.budget_range} == '30000_49999'))",
             "then": [
               {
                 "type": "TextBody",
