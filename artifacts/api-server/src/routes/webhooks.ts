@@ -9,6 +9,7 @@ import {
 } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { handleFlowDataEndpointRequest } from "../lib/whatsapp/flow-data-endpoint";
 import { verifyMetaWebhookSignature } from "../lib/whatsapp/signature";
 import {
   processMetaWhatsAppWebhook,
@@ -139,6 +140,32 @@ router.get("/webhooks/whatsapp", (req, res) => {
     return;
   }
   res.status(403).json({ error: "Forbidden" });
+});
+
+/**
+ * Meta WhatsApp Flow Data Endpoint (POST).
+ * Encrypted data_exchange for endpoint-powered flows — separate from nfm_reply webhook.
+ */
+router.post("/webhooks/whatsapp/flow", (req, res) => {
+  const rawBody = (req as RequestWithRawBody).rawBody;
+  const signature = req.headers["x-hub-signature-256"];
+
+  const result = handleFlowDataEndpointRequest({
+    encryptedBody: req.body as {
+      encrypted_flow_data: string;
+      encrypted_aes_key: string;
+      initial_vector: string;
+    },
+    rawBody,
+    signatureHeader: typeof signature === "string" ? signature : undefined,
+  });
+
+  res.status(result.statusCode);
+  if (result.body) {
+    res.type(result.contentType).send(result.body);
+    return;
+  }
+  res.end();
 });
 
 /** Meta Cloud API inbound events (POST). */

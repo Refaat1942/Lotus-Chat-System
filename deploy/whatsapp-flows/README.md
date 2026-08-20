@@ -24,6 +24,14 @@ The supported pattern is **Footer → `data_exchange`** on `BUDGET_SCREEN`, with
 
 Configure `endpoint_uri` on the Flow via **Flows API** or **Flow Builder** (not inside Flow JSON for v6.0). Set `data_api_version: "3.0"` in the JSON.
 
+**Server endpoint (this repo):**
+
+```
+POST https://<your-domain>/api/webhooks/whatsapp/flow
+```
+
+Requires `WHATSAPP_FLOW_PRIVATE_KEY` (RSA private key matching Meta's uploaded public key) and `WHATSAPP_APP_SECRET` for `X-Hub-Signature-256` validation.
+
 ## Endpoint contract (BUDGET_SCREEN)
 
 **Request** (decrypted `data_exchange` payload from Meta):
