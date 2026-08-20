@@ -50,10 +50,10 @@ case "$CMD" in
 
   up)
     ensure_env
-    echo "==> Building images..."
-    docker compose build
+    echo "==> Building images (project: ${COMPOSE_PROJECT_NAME:-fratelanza})..."
+    docker compose --env-file .env build
     echo "==> Starting containers (detached, auto-restart on reboot)..."
-    docker compose up -d
+    docker compose --env-file .env up -d
     echo ""
     echo "==> Done. Containers:"
     docker compose ps
@@ -63,23 +63,23 @@ case "$CMD" in
     ;;
 
   down)
-    docker compose down
+    docker compose --env-file .env down
     ;;
 
   logs)
-    docker compose logs -f --tail=200
+    docker compose --env-file .env logs -f --tail=200
     ;;
 
   status)
-    docker compose ps
+    docker compose --env-file .env ps
     ;;
 
   update)
     echo "==> Pulling latest code..."
     git -C .. pull
     echo "==> Rebuilding and restarting..."
-    docker compose up -d --build
-    docker compose ps
+    docker compose --env-file .env up -d --build
+    docker compose --env-file .env ps
     ;;
 
   *)

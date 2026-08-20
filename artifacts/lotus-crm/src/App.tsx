@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { setBaseUrl } from "@workspace/api-client-react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { LocaleProvider } from "@/i18n";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { useMyPermissions, type EffectivePermissions } from "@/lib/api-extra";
 import { AppLayout } from "@/components/layout";
@@ -139,12 +140,14 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
         <TooltipProvider>
+          <LocaleProvider>
           <AuthProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
               <Router />
             </WouterRouter>
             <Toaster />
           </AuthProvider>
+          </LocaleProvider>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
