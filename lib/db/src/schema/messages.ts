@@ -22,7 +22,8 @@ export const messagesTable = pgTable("messages", {
   }).notNull(),
   body: text("body").notNull(),
   attachments: text("attachments").array().notNull().default([]),
-  status: text("status", { enum: ["sent", "delivered", "read"] })
+  externalId: text("external_id"),
+  status: text("status", { enum: ["sent", "delivered", "read", "failed"] })
     .notNull()
     .default("sent"),
   isNote: boolean("is_note").notNull().default(false),

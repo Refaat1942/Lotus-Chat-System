@@ -1,5 +1,6 @@
-import React from "react";
-import { Moon, Sun, Leaf, Circle } from "lucide-react";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { useT } from "@/i18n";
+import { Circle, Leaf, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -22,22 +23,23 @@ import {
 
 export function TopBar() {
   const { user } = useAuth();
+  const t = useT();
   const { theme, setTheme } = useTheme();
   const { data: branding } = useBranding();
   const { data: availability } = useMyAvailability();
   const { data: notReadyReasons } = useNotReadyReasons();
   const updateAvailability = useUpdateMyAvailability();
 
-  const companyName = branding?.companyName ?? "Fratelanza Chat Management System";
+  const companyName = branding?.companyName ?? t("common.appName");
 
   const isReady = availability?.isReady ?? true;
   const currentReason = notReadyReasons?.find((r) => r.id === availability?.notReadyReasonId);
   const statusColor = isReady ? "text-emerald-500" : "text-amber-500";
   const statusLabel = isReady
-    ? "Ready"
+    ? t("common.ready")
     : currentReason
-      ? `Not Ready · ${currentReason.value}`
-      : "Not Ready";
+      ? `${t("common.notReady")} · ${currentReason.value}`
+      : t("common.notReady");
 
   return (
     <header
@@ -78,16 +80,16 @@ export function TopBar() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Set availability</DropdownMenuLabel>
+              <DropdownMenuLabel>{t("topBar.setAvailability")}</DropdownMenuLabel>
               <DropdownMenuItem
                 onClick={() => updateAvailability.mutate({ notReadyReasonId: null })}
                 data-testid="availability-ready"
               >
                 <Circle className="h-2 w-2 fill-current text-emerald-500 mr-2" />
-                Ready
+                {t("common.ready")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Not Ready — pick reason</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-xs text-muted-foreground">{t("topBar.pickReason")}</DropdownMenuLabel>
               {notReadyReasons?.length ? (
                 notReadyReasons.map((r) => (
                   <DropdownMenuItem
@@ -100,7 +102,7 @@ export function TopBar() {
                   </DropdownMenuItem>
                 ))
               ) : (
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">No reasons configured</div>
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">{t("common.noReasonsConfigured")}</div>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -108,12 +110,14 @@ export function TopBar() {
 
         <NotificationsBell />
 
+        <LanguageSwitcher />
+
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           className="h-9 w-9 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Toggle theme"
+          aria-label={t("topBar.toggleTheme")}
           data-testid="btn-theme-toggle"
         >
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
