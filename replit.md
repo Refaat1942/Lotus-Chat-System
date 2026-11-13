@@ -1,4 +1,4 @@
-# Lotus Pharmacies CRM & Chat System
+# Lotus Pharmacies Chat System
 
 ## Overview
 
@@ -40,7 +40,7 @@ lib/
 
 The global reverse proxy (port 80) routes:
 - `/api/*` → API server at port 8080
-- `/*` → Lotus CRM frontend at port 23414
+- `/*` → Lotus Pharmacies Chat System frontend at port 23414
 
 ## Auth
 

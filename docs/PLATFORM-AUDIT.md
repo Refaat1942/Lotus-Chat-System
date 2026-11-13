@@ -1,4 +1,4 @@
-# Fratelanza Chat System — platform audit & roadmap
+# Lotus Pharmacies Chat System — platform audit & roadmap
 
 Audit of the codebase against the "enterprise omnichannel" specification.
 Status values: **Done** (works end-to-end against real data), **Partial**

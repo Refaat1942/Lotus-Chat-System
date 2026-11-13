@@ -16,18 +16,18 @@ The code is ready; each channel turns on as soon as its token is in
 
 1. **Messenger:** add the *Messenger* product → *Messenger API settings*.
    - Generate a Page access token for your Facebook Page (needs `pages_messaging`) → `MESSENGER_PAGE_ACCESS_TOKEN`.
-   - Webhook: Callback URL `https://chat.fratelanza.com/api/webhooks/messenger`, Verify token = your verify token.
+   - Webhook: Callback URL `https://chat.lotuspharmacies.com/api/webhooks/messenger`, Verify token = your verify token.
    - Subscribe the Page to: `messages`, `messaging_postbacks`, `message_echoes`, `message_deliveries`, `message_reads`.
 2. **Instagram:** connect the Instagram professional account to the same Facebook Page, add *Instagram* → *API setup with Facebook login* (or Instagram login).
    - Token with `instagram_manage_messages` (Page token of the linked Page, or an Instagram-login token starting with `IG`) → `INSTAGRAM_ACCESS_TOKEN`.
-   - Webhook: Callback URL `https://chat.fratelanza.com/api/webhooks/instagram`, same verify token. Subscribe to `messages`, `messaging_postbacks`, `messaging_seen`.
+   - Webhook: Callback URL `https://chat.lotuspharmacies.com/api/webhooks/instagram`, same verify token. Subscribe to `messages`, `messaging_postbacks`, `messaging_seen`.
    - In the Instagram app: Settings → Messages → *Allow access to messages* must be on.
 3. Until the app passes **App Review** for `pages_messaging` / `instagram_manage_messages`, only people with a role on the app (admins, developers, testers) can message it.
 
 ## Turn it on
 
 ```bash
-cd /opt/fratelanza-chat/deploy
+cd /opt/lotus-chat/deploy
 nano .env        # fill MESSENGER_PAGE_ACCESS_TOKEN and/or INSTAGRAM_ACCESS_TOKEN
 docker compose up -d api
 ```

@@ -5,10 +5,10 @@ generated = []
 id = "3U1Vym42TyTfFnOp4gca4"
 uri = "file://deploy/MIGRATION_GUIDE.md"
 type = "text"
-title = "Lotus CRM — VPS Migration Guide"
+title = "Lotus Pharmacies Chat System — VPS Migration Guide"
 
 [[outputs]]
 id = "8VtyQh-SsmAnfyG_1xoex"
 uri = "file://deploy/HANDOFF.md"
 type = "text"
-title = "Lotus CRM – Server Handoff Document"
+title = "Lotus Pharmacies Chat System – Server Handoff Document"

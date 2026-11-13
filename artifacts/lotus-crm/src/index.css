@@ -67,7 +67,7 @@
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
 
-/* Sidebar: gold marker on the active item (brand gold on Deep Navy) */
+/* Sidebar: accent marker on the active item (lotus pink on Deep Green) */
 [data-sidebar="menu-button"][data-active="true"] { position: relative; }
 [data-sidebar="menu-button"][data-active="true"]::before {
   content: "";

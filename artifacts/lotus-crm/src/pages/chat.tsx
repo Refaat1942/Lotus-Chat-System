@@ -167,6 +167,17 @@ function customerTitle(c: { customer?: { name?: string | null; phone?: string | 
 
 /* -------------------------------------------------------------------- page */
 
+/** Empty-inbox logo: the logo uploaded in Settings → Branding, else the default one. */
+function EmptyStateLogo() {
+  const { data: branding } = useBranding();
+  const name = branding?.companyName ?? "Lotus Pharmacies Chat System";
+  return branding?.logoUrl ? (
+    <BrandLogo logoUrl={branding.logoUrl} name={name} imgClassName="max-h-32 max-w-[240px] opacity-95" />
+  ) : (
+    <BrandLogo name={name} large className="h-32 w-32 opacity-95 shadow-xl ring-1 ring-border" />
+  );
+}
+
 export default function ChatPage() {
   const [, navigate] = useLocation();
   const searchString = useSearch();
@@ -577,7 +588,7 @@ export default function ChatPage() {
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6 bg-wallpaper">
-            <BrandLogo name="Fratelanza" large className="h-32 w-32 opacity-95 shadow-xl ring-1 ring-border" />
+            <EmptyStateLogo />
             <h3 className="mt-6 text-lg font-extrabold tracking-tight">Select a conversation</h3>
             <p className="text-sm text-muted-foreground mt-1 max-w-xs">Choose a chat from the list to read and reply.</p>
             <BrandTagline className="mt-6 text-xs font-semibold tracking-wide text-muted-foreground/80" />

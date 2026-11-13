@@ -358,7 +358,7 @@ function ChatAgeSection({ aging, loading, onOpen }: { aging?: InsightsResponse["
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <AgeBars title="Customers waiting for us" hint="The customer wrote last — they are waiting for our reply." rows={aging.waitingOnUs} barClass="bg-primary" testId="age-waiting-us" />
-        <AgeBars title="Waiting for the customer" hint="We replied last — the customer has not answered yet." rows={aging.waitingOnCustomer} barClass="bg-[hsl(var(--navy-light))] dark:bg-[hsl(var(--cyan))]" testId="age-waiting-customer" />
+        <AgeBars title="Waiting for the customer" hint="We replied last — the customer has not answered yet." rows={aging.waitingOnCustomer} barClass="bg-[hsl(var(--deep-light))] dark:bg-[hsl(var(--mint))]" testId="age-waiting-customer" />
       </div>
       <div className="grid gap-4 lg:grid-cols-5">
         <Card className="shadow-sm lg:col-span-3" data-testid="age-by-topic">

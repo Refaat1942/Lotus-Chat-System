@@ -40,14 +40,14 @@ function NavLink({
   label,
   active,
   badge,
-  badgeTone = "gold",
+  badgeTone = "accent",
 }: {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   active: boolean;
   badge?: number;
-  badgeTone?: "gold" | "destructive";
+  badgeTone?: "accent" | "destructive";
 }) {
   const { setOpenMobile } = useSidebar();
   return (
@@ -88,7 +88,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   const { data: whisperUnread } = useWhisperUnread();
   const urgentCount = insights?.summary.urgentCount ?? 0;
   const unread = sync?.unread ?? 0;
-  const companyName = branding?.companyName ?? "Fratelanza";
+  const companyName = branding?.companyName ?? "Lotus Pharmacies Chat System";
   const isActive = (href: string) => location === href || location.startsWith(href + "/");
 
   // On phones an open conversation takes the whole screen (its own header + back button).
@@ -161,7 +161,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
         <SidebarFooter className="border-t border-sidebar-border p-3 gap-3">
           {user?.role === "agent" && <AvailabilityToggle />}
-          <BrandTagline className="text-center text-[11px] font-medium text-[hsl(var(--soft-gold))]/80" />
+          <BrandTagline className="text-center text-[11px] font-medium text-[hsl(var(--lotus-soft))]/80" />
         </SidebarFooter>
       </Sidebar>
 

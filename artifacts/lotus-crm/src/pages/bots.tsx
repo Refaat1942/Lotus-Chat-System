@@ -36,7 +36,7 @@ const errMsg = (e: unknown, f: string) => (e as { data?: { error?: string; probl
 
 const STARTER: Omit<BotRow, "id"> = {
   name: "Welcome menu", description: null, kind: "menu", channel: "all", trigger: "new_conversation", keywords: [],
-  welcomeMessage: "Welcome to Fratelanza! 👋", fallbackMessage: "Sorry, please reply with the number of an option.",
+  welcomeMessage: "Welcome to Lotus Pharmacies! 👋", fallbackMessage: "Sorry, please reply with the number of an option.",
   handoverMessage: "Thanks — one of our team will reply shortly.", completionMessage: null, endAction: "handover", maxFallbacks: 2, priority: 0,
   offHours: { enabled: false, start: "09:00", end: "21:00", days: [0, 1, 2, 3, 4, 6], message: "We're closed right now — we'll reply as soon as we open." },
   steps: [

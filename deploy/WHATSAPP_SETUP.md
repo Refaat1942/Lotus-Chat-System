@@ -17,7 +17,7 @@ Behaviour notes
 
 ## Meta dashboard
 1. developers.facebook.com → your app → **WhatsApp → Configuration**.
-2. **Callback URL**: `https://<your-https-domain>/api/webhooks/whatsapp` — Meta requires a valid HTTPS certificate (use the nginx example in `nginx-host-chat.conf.example`; port 17156 itself stays on loopback).
+2. **Callback URL**: `https://<your-https-domain>/api/webhooks/whatsapp` — Meta requires a valid HTTPS certificate (use the nginx example in `nginx-host-chat.conf.example`; port 16391 itself stays on loopback).
 3. **Verify token**: the value of `WHATSAPP_VERIFY_TOKEN` in `deploy/.env`.
 4. After "Verify and save", under *Webhook fields* subscribe to **messages**.
 5. `WHATSAPP_APP_SECRET`: App settings → Basic → App secret.
@@ -30,7 +30,7 @@ Do not commit tokens; `deploy/.env` is git-ignored.
 ## Sending (on by default) and the emergency stop
 Replies typed in the inbox are sent to customers normally. To stop ALL sending
 in an emergency, add `WHATSAPP_SENDING_ENABLED=false` to `deploy/.env` and run
-`cd /opt/fratelanza-chat/deploy && docker compose up -d`. While stopped, replies
+`cd /opt/lotus-chat/deploy && docker compose up -d`. While stopped, replies
 become internal notes and campaigns are blocked; receiving keeps working.
 Remove the line (or set `true`) and run the same command to send again.
 Settings → WhatsApp shows the current state.
