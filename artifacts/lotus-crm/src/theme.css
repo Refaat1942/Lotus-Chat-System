@@ -1,9 +1,8 @@
 /*
- * Fratelanza design tokens — the ONLY place colours are defined.
- * Source: "Fratelanza Print & Marketing Design Pack" (brand basics).
+ * Lotus Pharmacies design tokens — the ONLY place colours are defined.
  *
- *   Deep Navy  #0A1F3A   Navy Light #0F2F55   Brand Gold #D4A03A
- *   Soft Gold  #F2D89A   Teal       #0E7490   Cyan       #22D3EE
+ *   Deep Green #0B3B33   Green Light #10524A   Lotus Pink #E0679A
+ *   Soft Pink  #F7C6DA   Brand Green #0F8A6E   Mint       #34D3A6
  *   Typography: Plus Jakarta Sans (English) · Tajawal (Arabic)
  *
  * Components only use semantic Tailwind classes (bg-primary, text-muted-foreground,
@@ -16,47 +15,47 @@
   --radius: 0.75rem;
 
   /* Brand palette (reference values) */
-  --navy: 214 71% 13%;            /* #0A1F3A */
-  --navy-light: 213 70% 20%;      /* #0F2F55 */
-  --gold: 40 64% 53%;             /* #D4A03A */
-  --soft-gold: 42 77% 78%;        /* #F2D89A */
-  --teal: 193 82% 31%;            /* #0E7490 */
-  --cyan: 188 86% 53%;            /* #22D3EE */
+  --deep: 170 69% 14%;            /* #0B3B33 */
+  --deep-light: 173 67% 19%;      /* #10524A */
+  --lotus: 335 66% 64%;           /* #E0679A */
+  --lotus-soft: 336 75% 87%;      /* #F7C6DA */
+  --brand: 166 80% 30%;           /* #0F8A6E */
+  --mint: 163 64% 52%;            /* #34D3A6 */
 
-  /* Interactive colour: Teal */
-  --primary: var(--teal);
+  /* Interactive colour: Brand Green */
+  --primary: var(--brand);
   --primary-foreground: 0 0% 100%;
-  /* Highlights: Brand Gold (badges, active marker, charts) */
-  --brand-accent: var(--gold);
-  --brand-accent-foreground: 214 71% 13%;
+  /* Highlights: Lotus Pink (badges, active marker, charts) */
+  --brand-accent: var(--lotus);
+  --brand-accent-foreground: 168 71% 13%;
   /* shadcn "accent" = neutral hover / selection surface */
-  --accent: 214 32% 93%;
-  --accent-foreground: 214 50% 13%;
+  --accent: 168 32% 93%;
+  --accent-foreground: 168 50% 13%;
 
   /* Surfaces */
-  --background: 214 30% 96%;
-  --foreground: 214 50% 13%;
+  --background: 168 30% 96%;
+  --foreground: 168 50% 13%;
   --card: 0 0% 100%;
-  --card-foreground: 214 50% 13%;
+  --card-foreground: 168 50% 13%;
   --popover: 0 0% 100%;
-  --popover-foreground: 214 50% 13%;
-  --muted: 214 28% 93%;
-  --muted-foreground: 214 18% 36%;
-  --secondary: 214 28% 92%;
-  --secondary-foreground: 214 50% 16%;
-  --border: 214 26% 88%;
-  --input: 214 22% 78%;
+  --popover-foreground: 168 50% 13%;
+  --muted: 168 28% 93%;
+  --muted-foreground: 168 18% 36%;
+  --secondary: 168 28% 92%;
+  --secondary-foreground: 168 50% 16%;
+  --border: 168 26% 88%;
+  --input: 168 22% 78%;
   --ring: var(--primary);
 
-  /* Sidebar: Deep Navy with gold marker */
-  --sidebar: var(--navy);
-  --sidebar-foreground: 214 30% 88%;
-  --sidebar-border: 213 55% 22%;
-  --sidebar-primary: var(--gold);
-  --sidebar-primary-foreground: 214 71% 13%;
-  --sidebar-accent: var(--navy-light);
+  /* Sidebar: Deep Green with lotus marker */
+  --sidebar: var(--deep);
+  --sidebar-foreground: 168 30% 88%;
+  --sidebar-border: 168 55% 22%;
+  --sidebar-primary: var(--lotus);
+  --sidebar-primary-foreground: 168 71% 13%;
+  --sidebar-accent: var(--deep-light);
   --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-ring: var(--gold);
+  --sidebar-ring: var(--lotus);
 
   /* Status */
   --destructive: 0 72% 46%;
@@ -72,56 +71,56 @@
   --info-foreground: 0 0% 100%;
 
   /* Inbox */
-  --bubble-out: var(--navy-light);
+  --bubble-out: var(--deep-light);
   --bubble-out-foreground: 0 0% 100%;
   --bubble-in: 0 0% 100%;
-  --bubble-in-foreground: 214 50% 13%;
-  --chat-wallpaper: 214 32% 94%;
+  --bubble-in-foreground: 168 50% 13%;
+  --chat-wallpaper: 168 32% 94%;
 
   /* Charts */
-  --chart-1: var(--teal);
-  --chart-2: var(--gold);
+  --chart-1: var(--brand);
+  --chart-2: var(--lotus);
   --chart-3: 213 60% 45%;
   --chart-4: 0 70% 52%;
-  --chart-5: var(--cyan);
+  --chart-5: var(--mint);
 
-  /* Elevation (navy-tinted, no glow) */
-  --button-outline: rgba(10, 31, 58, 0.16);
-  --badge-outline: rgba(10, 31, 58, 0.14);
-  --elevate-1: rgba(10, 31, 58, 0.04);
-  --elevate-2: rgba(10, 31, 58, 0.08);
-  --shadow-sm: 0 1px 2px 0 rgb(10 31 58 / 0.06);
-  --shadow: 0 2px 8px -1px rgb(10 31 58 / 0.09), 0 1px 3px -1px rgb(10 31 58 / 0.06);
-  --shadow-lg: 0 14px 32px -8px rgb(10 31 58 / 0.22);
+  /* Elevation (green-tinted, no glow) */
+  --button-outline: rgba(11, 59, 51, 0.16);
+  --badge-outline: rgba(11, 59, 51, 0.14);
+  --elevate-1: rgba(11, 59, 51, 0.04);
+  --elevate-2: rgba(11, 59, 51, 0.08);
+  --shadow-sm: 0 1px 2px 0 rgb(11 59 51 / 0.06);
+  --shadow: 0 2px 8px -1px rgb(11 59 51 / 0.09), 0 1px 3px -1px rgb(11 59 51 / 0.06);
+  --shadow-lg: 0 14px 32px -8px rgb(11 59 51 / 0.22);
 
   color-scheme: light;
 }
 
 .dark {
-  --primary: var(--cyan);
-  --primary-foreground: 214 71% 10%;
-  --brand-accent: 40 70% 58%;
-  --brand-accent-foreground: 214 71% 10%;
-  --accent: 214 45% 17%;
-  --accent-foreground: 214 30% 96%;
+  --primary: var(--mint);
+  --primary-foreground: 168 71% 10%;
+  --brand-accent: 335 70% 70%;
+  --brand-accent-foreground: 168 71% 10%;
+  --accent: 168 45% 17%;
+  --accent-foreground: 168 30% 96%;
 
-  --background: 214 65% 7%;
-  --foreground: 214 30% 94%;
-  --card: 214 55% 10%;
-  --card-foreground: 214 30% 94%;
-  --popover: 214 55% 10%;
-  --popover-foreground: 214 30% 94%;
-  --muted: 214 45% 15%;
-  --muted-foreground: 214 20% 70%;
-  --secondary: 214 45% 17%;
-  --secondary-foreground: 214 30% 94%;
-  --border: 214 40% 19%;
-  --input: 214 35% 27%;
+  --background: 168 65% 7%;
+  --foreground: 168 30% 94%;
+  --card: 168 55% 10%;
+  --card-foreground: 168 30% 94%;
+  --popover: 168 55% 10%;
+  --popover-foreground: 168 30% 94%;
+  --muted: 168 45% 15%;
+  --muted-foreground: 168 20% 70%;
+  --secondary: 168 45% 17%;
+  --secondary-foreground: 168 30% 94%;
+  --border: 168 40% 19%;
+  --input: 168 35% 27%;
 
-  --sidebar: 214 72% 6%;
-  --sidebar-foreground: 214 30% 88%;
-  --sidebar-border: 214 45% 16%;
-  --sidebar-accent: 213 60% 15%;
+  --sidebar: 168 72% 6%;
+  --sidebar-foreground: 168 30% 88%;
+  --sidebar-border: 168 45% 16%;
+  --sidebar-accent: 168 60% 15%;
 
   --destructive: 0 72% 58%;
   --success: 152 55% 42%;
@@ -130,10 +129,10 @@
   --whisper-foreground: 262 40% 12%;
   --info: 212 85% 64%;
 
-  --bubble-out: 193 82% 26%;
-  --bubble-in: 214 45% 15%;
-  --bubble-in-foreground: 214 30% 94%;
-  --chat-wallpaper: 214 65% 8%;
+  --bubble-out: 166 80% 24%;
+  --bubble-in: 168 45% 15%;
+  --bubble-in-foreground: 168 30% 94%;
+  --chat-wallpaper: 168 65% 8%;
 
   --button-outline: rgba(255, 255, 255, 0.16);
   --badge-outline: rgba(255, 255, 255, 0.14);

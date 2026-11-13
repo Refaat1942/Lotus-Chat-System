@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# Non-destructive install/update of the Fratelanza chat system on the VPS.
+# Non-destructive install/update of the Lotus Pharmacies Chat System on the VPS.
 #  - never deletes volumes, directories or other containers
 #  - never overwrites an existing deploy/.env
 #  - refuses to start if port/containers are already taken
 #  - does not touch nginx (see deploy/nginx-host-chat.conf.example)
 #
 # Usage (as root):
-#   DOMAIN=chat.fratelanza.com ADMIN_EMAIL=you@x.com ADMIN_PASSWORD=... bash vps-install.sh
+#   DOMAIN=chat.lotuspharmacies.com ADMIN_EMAIL=you@x.com ADMIN_PASSWORD=... bash vps-install.sh
 # DOMAIN (optional): adds a NEW nginx site for that domain -> 127.0.0.1:PORT.
 #   It is only enabled if `nginx -t` passes afterwards; otherwise it is removed
 #   again and existing sites are left exactly as they were.
 set -euo pipefail
 
-REPO="${REPO:-https://github.com/Refaat1942/fratelanza-chating-system.git}"
+REPO="${REPO:-https://github.com/Refaat1942/Lotus-Chat-System.git}"
 BRANCH="${BRANCH:-main}"
-DIR="${INSTALL_DIR:-/opt/fratelanza-chat}"
-PORT="${WEB_PORT:-17156}"
+DIR="${INSTALL_DIR:-/opt/lotus-chat}"
+PORT="${WEB_PORT:-16391}"
 DOMAIN="${DOMAIN:-}"
-ACME_EMAIL="${ACME_EMAIL:-admin@fratelanza.com}"
+ACME_EMAIL="${ACME_EMAIL:-admin@lotuspharmacies.com}"
 
 [ "$(id -u)" -eq 0 ] || { echo "Run as root."; exit 1; }
 command -v docker >/dev/null || { echo "Docker is not installed."; exit 1; }
@@ -56,7 +56,7 @@ if [ "$RUNNING" -eq 0 ]; then
     echo "Port $PORT is already in use by something else — aborting. Nothing was started."
     exit 1
   fi
-  for c in fratelanza_postgres fratelanza_api fratelanza_web; do
+  for c in lotus_chat_postgres lotus_chat_api lotus_chat_web; do
     if docker ps -a --format '{{.Names}}' | grep -qx "$c"; then
       echo "A container named $c already exists (another project?) — aborting."
       exit 1
@@ -90,7 +90,7 @@ if [ -n "$DOMAIN" ]; then
        && [ ! -e "$LINK" ]; then
       echo "nginx already has a server_name for $DOMAIN elsewhere — not adding another. Skipping nginx."
     else
-      sed "s/chat\.example\.com/$DOMAIN/; s/127\.0\.0\.1:17156/127.0.0.1:$PORT/" nginx-host-chat.conf.example > "$SITE"
+      sed "s/chat\.example\.com/$DOMAIN/; s/127\.0\.0\.1:16391/127.0.0.1:$PORT/" nginx-host-chat.conf.example > "$SITE"
       ln -sf "$SITE" "$LINK"
       if nginx -t >/dev/null 2>&1; then
         systemctl reload nginx || echo "nginx reload failed (is nginx running on this host?)"

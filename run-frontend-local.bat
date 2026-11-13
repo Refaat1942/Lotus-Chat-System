@@ -1,5 +1,5 @@
 @echo off
-cd /d "c:\Users\mahmoud\Desktop\Fratelanza-Chating-System"
+cd /d "%~dp0"
 
 echo.
 echo ========================================

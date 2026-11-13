@@ -207,14 +207,14 @@ export function BrandingSettings() {
             )}
             <input ref={fileRef} type="file" accept={ALLOWED.join(",")} className="hidden" onChange={onFile} />
           </div>
-          <p className="text-xs text-muted-foreground">Until you upload one, the official Fratelanza medallion is used. PNG, JPG, WEBP or SVG · up to {Math.round(MAX_BYTES / 1000)} KB · between 64×32 and 4096×4096 px. Shown on the sign-in page, sidebar, header and as the browser icon. A wide or square logo on a transparent background works best.</p>
+          <p className="text-xs text-muted-foreground">Until you upload one, the default Lotus Pharmacies logo is used. PNG, JPG, WEBP or SVG · up to {Math.round(MAX_BYTES / 1000)} KB · between 64×32 and 4096×4096 px. Shown on the sign-in page, sidebar, header and as the browser icon. A wide or square logo on a transparent background works best.</p>
         </div>
       </section>
 
       <section className="rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
         <div>
           <h4 className="font-semibold">Brand colours</h4>
-          <p className="text-sm text-muted-foreground">Used for buttons, links, your message bubbles and highlights across the whole app. Leave empty to use the official Fratelanza palette (Navy, Teal and Gold).</p>
+          <p className="text-sm text-muted-foreground">Used for buttons, links, your message bubbles and highlights across the whole app. Leave empty to use the default Lotus Pharmacies palette (Green and Lotus Pink).</p>
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <ColorField id="b-primary" label="Primary colour" value={primary} onChange={setPrimary} hint="Buttons, active menu, outgoing messages." />

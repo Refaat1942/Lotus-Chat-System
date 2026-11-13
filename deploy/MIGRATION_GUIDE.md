@@ -1,4 +1,4 @@
-# Lotus Pharmacies CRM — Hostinger VPS Migration Guide
+# Lotus Pharmacies Chat System — Hostinger VPS Migration Guide
 
 Deploy your CRM to your Hostinger VPS using Docker.
 You only need to copy/paste commands — no decisions required.

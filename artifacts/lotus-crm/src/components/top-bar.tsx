@@ -32,7 +32,7 @@ export function TopBar() {
   const { data: notReadyReasons } = useNotReadyReasons();
   const updateAvailability = useUpdateMyAvailability();
 
-  const companyName = branding?.companyName ?? "Fratelanza";
+  const companyName = branding?.companyName ?? "Lotus Pharmacies Chat System";
   const name = userLabel(user);
 
   const isReady = availability?.isReady ?? true;

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ----------------------------------------------------------------------------
-#  Lotus Pharmacies CRM — one-command deployment helper
+#  Lotus Pharmacies Chat System — one-command deployment helper
 #  Usage:
 #    ./deploy.sh init     # first-time setup (installs Docker if missing)
 #    ./deploy.sh up       # build and start

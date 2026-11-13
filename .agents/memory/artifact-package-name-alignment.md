@@ -10,7 +10,7 @@ is fixed at artifact-registration time from the package.json `name`.
 **Rule:** Keep `artifacts/<dir>/package.json` `name` aligned with the filter used by
 the workflow / `.replit` / Dockerfiles (conventionally `@workspace/<dir>`).
 
-**Why:** If the package is renamed (e.g. to `@workspace/fratelanza-crm`) but the
+**Why:** If the package is renamed (e.g. to `@workspace/other-crm`) but the
 filters still say `@workspace/lotus-crm`, `pnpm --filter` matches **nothing** and
 exits 0 — no error. Result: the dev web workflow "finishes" with "No projects matched
 the filters" and never serves, and the deploy build **silently skips building the

@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useBranding } from "@/lib/api-extra";
 import { applyBrandColors } from "@/lib/brand";
 
-const DEFAULT_TITLE = "Fratelanza";
+const DEFAULT_TITLE = "Lotus Pharmacies Chat System";
 
 /**
  * Applies the admin-configured branding to the whole document: colour tokens,

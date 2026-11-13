@@ -5,7 +5,7 @@ description: bash/rg/grep output sometimes masks proper nouns; the read tool sho
 
 In this environment, `bash`/ripgrep output can replace certain proper nouns/brand
 terms with short placeholders (observed: "whatsapp"→"n", "lotus"→"ln",
-"fratelanza"→"ln", "openai"→"ln", and even a filename like `.replit` mangled).
+"openai"→"ln", and even a filename like `.replit` mangled).
 
 **How to apply:** Do NOT trust exact brand/identifier strings copied from bash/rg
 output. To read a precise name (package names, tokens, identifiers, file contents),

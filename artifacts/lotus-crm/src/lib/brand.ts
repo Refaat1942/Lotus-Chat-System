@@ -53,7 +53,7 @@ const VARS = [
 
 /**
  * Optional per-deployment overrides from Settings → Branding. With nothing
- * configured the Fratelanza palette in theme.css applies untouched.
+ * configured the Lotus Pharmacies palette in theme.css applies untouched.
  */
 export function applyBrandColors(primaryHex?: string | null, accentHex?: string | null): void {
   const root = document.documentElement;

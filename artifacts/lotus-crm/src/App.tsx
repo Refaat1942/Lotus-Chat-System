@@ -110,7 +110,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="fratelanza-theme">
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="lotus-theme">
         <TooltipProvider>
           <AuthProvider>
             <BrandProvider>

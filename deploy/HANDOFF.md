@@ -1,4 +1,4 @@
-# Lotus Pharmacies CRM — Server / Domain Handoff
+# Lotus Pharmacies Chat System — Server / Domain Handoff
 
 This document lists everything needed to host the project on your own
 servers and domains. Hand this file to your IT support.
@@ -73,7 +73,7 @@ Copy `deploy/.env.example` → `deploy/.env` and fill in:
 | `JWT_SECRET` | **Required.** Signs login tokens. Min 32 chars. | `openssl rand -hex 48` |
 | `RUN_SEED` | Run demo seed on first boot | `true` (then set `false` later) |
 | `FORCE_RESEED` | One-shot wipe + reseed of demo data (preserves users) | leave unset |
-| `WEB_PORT` | Host port nginx is exposed on | `8090` |
+| `WEB_PORT` | Host port nginx is exposed on | `16391` |
 
 That's the **complete** env list. There are no API keys, no webhook
 secrets, no SMTP, no S3.

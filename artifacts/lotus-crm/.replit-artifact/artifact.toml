@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Lotus Pharmacies CRM"
+title = "Lotus Pharmacies Chat System"
 version = "1.0.0"
 id = "artifacts/lotus-crm"
 router = "path"
