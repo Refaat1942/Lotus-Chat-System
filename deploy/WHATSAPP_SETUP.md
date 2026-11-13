@@ -12,8 +12,8 @@ Behaviour notes
 * Customers are matched by digits, so `+20 100…`, `0100…` and Meta's `2010…` are one customer; unknown numbers create a customer (`+<digits>`, tag *New*).
 * A customer reply re-opens the existing open/pending conversation instead of creating a new one; new/queued chats go through auto-assignment.
 * Status callbacks never move a message backwards (read → delivered is ignored).
-* Free-form text only works inside WhatsApp's **24-hour customer-service window**. Outside it Meta rejects the send (error 131047) — approved *template* messages would be needed (not implemented).
-* Inbound media is recorded as a placeholder (`[Image]`, `[Document] …`); media download is not implemented.
+* Free-form text only works inside WhatsApp's **24-hour customer-service window**. Outside it Meta rejects the send (error 131047) — use an approved *template* (see Templates below).
+* Inbound photos, voice notes, videos and files are downloaded and shown in the chat (see the last section).
 
 ## Meta dashboard
 1. developers.facebook.com → your app → **WhatsApp → Configuration**.

@@ -107,7 +107,7 @@ function Shell({ children }: { children: React.ReactNode }) {
               imgClassName="h-11 max-w-[150px] shrink-0 rounded-md bg-white p-1"
             />
             <div className="min-w-0">
-              <p className="font-extrabold text-[15px] leading-tight tracking-[0.14em] uppercase text-white truncate">{companyName}</p>
+              <p className="font-extrabold text-[13px] leading-tight tracking-[0.06em] uppercase text-white line-clamp-2 break-words" title={companyName}>{companyName}</p>
               <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-sidebar-foreground/60">Customer Chat</p>
             </div>
           </div>
