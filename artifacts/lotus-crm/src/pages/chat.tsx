@@ -172,7 +172,7 @@ function EmptyStateLogo() {
   const { data: branding } = useBranding();
   const name = branding?.companyName ?? "Lotus Pharmacies Chat System";
   return branding?.logoUrl ? (
-    <BrandLogo logoUrl={branding.logoUrl} name={name} imgClassName="h-48 w-auto max-w-[360px]" />
+    <BrandLogo logoUrl={branding.logoUrl} name={name} imgClassName="h-36 w-auto max-w-[320px]" />
   ) : (
     <BrandLogo name={name} large className="h-32 w-32 opacity-95 shadow-xl ring-1 ring-border" />
   );
