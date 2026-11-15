@@ -99,13 +99,14 @@ function Shell({ children }: { children: React.ReactNode }) {
       <SupervisionNotifier meId={user?.id} />
       <Sidebar className="border-r border-sidebar-border">
         <SidebarHeader className="px-4 py-4 border-b border-sidebar-border">
-          <div className="flex items-center gap-3 min-w-0">
-            <BrandLogo
-              logoUrl={branding?.logoUrl}
-              name={companyName}
-              className="h-11 w-11 shrink-0 ring-1 ring-white/10"
-              imgClassName="h-11 max-w-[150px] shrink-0 rounded-md bg-white p-1"
-            />
+          <div className={branding?.logoUrl ? "flex flex-col items-center gap-3 min-w-0 text-center" : "flex items-center gap-3 min-w-0"}>
+            {branding?.logoUrl ? (
+              <div className="w-full rounded-xl bg-white px-3 py-2 flex items-center justify-center">
+                <BrandLogo logoUrl={branding.logoUrl} name={companyName} imgClassName="h-20 w-auto max-w-full" />
+              </div>
+            ) : (
+              <BrandLogo name={companyName} className="h-11 w-11 shrink-0 ring-1 ring-white/10" />
+            )}
             <div className="min-w-0">
               <p className="font-extrabold text-[13px] leading-tight tracking-[0.06em] uppercase text-white line-clamp-2 break-words" title={companyName}>{companyName}</p>
               <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-sidebar-foreground/60">Customer Chat</p>
