@@ -48,7 +48,7 @@ export function TopBar() {
       <div className="flex items-center gap-2 min-w-0">
         <SidebarTrigger className="h-10 w-10 md:hidden" aria-label="Open menu" />
         <div className="flex items-center gap-2 min-w-0 md:hidden">
-          <BrandLogo logoUrl={branding?.logoUrl} name={companyName} className="h-7 w-7" imgClassName="h-7 max-w-[120px]" />
+          <BrandLogo logoUrl={branding?.logoUrl} name={companyName} className="h-8 w-8" imgClassName="h-9 w-auto max-w-[140px]" />
           <span className="font-semibold text-sm truncate">{companyName}</span>
         </div>
       </div>
