@@ -101,8 +101,8 @@ function Shell({ children }: { children: React.ReactNode }) {
         <SidebarHeader className="px-4 py-4 border-b border-sidebar-border">
           <div className={branding?.logoUrl ? "flex flex-col items-center gap-3 min-w-0 text-center" : "flex items-center gap-3 min-w-0"}>
             {branding?.logoUrl ? (
-              <div className="w-full rounded-xl bg-white px-3 py-2 flex items-center justify-center">
-                <BrandLogo logoUrl={branding.logoUrl} name={companyName} imgClassName="h-20 w-auto max-w-full" />
+              <div className="max-w-full rounded-xl bg-white p-2 inline-flex items-center justify-center">
+                <BrandLogo logoUrl={branding.logoUrl} name={companyName} imgClassName="h-20 w-auto max-w-[200px]" />
               </div>
             ) : (
               <BrandLogo name={companyName} className="h-11 w-11 shrink-0 ring-1 ring-white/10" />
