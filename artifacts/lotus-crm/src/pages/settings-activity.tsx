@@ -41,6 +41,7 @@ const LABELS: Record<string, string> = {
   "permissions.role_changed": "Changed role permissions",
   "permissions.user_changed": "Changed a user's permissions",
   "conversation.assigned": "Assigned chat",
+  "conversation.auto_assigned": "Chat assigned automatically",
   "conversation.bulk_assigned": "Assigned chats (bulk)",
   "conversation.takeover": "Took over chat",
   "conversation.takeover_released": "Handed chat back",
@@ -54,6 +55,7 @@ const LABELS: Record<string, string> = {
   "bot.deactivated": "Switched a bot off",
   "bot.deleted": "Deleted bot",
   "customers.exported": "Exported customers",
+  "report.exported": "Exported a report",
   "customers.imported": "Imported customers",
   "customers.merged": "Merged duplicate customers",
   "delivery.updated": "Updated a delivery",
@@ -108,7 +110,7 @@ export function ActivityLogSettings() {
           {data!.rows.map((r) => (
             <li key={r.id} className="px-3 sm:px-4 py-2.5 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm">
               <time className="text-xs text-muted-foreground tabular-nums w-36 shrink-0">{format(parseISO(r.createdAt), "d MMM yyyy, HH:mm:ss")}</time>
-              <span className="font-medium w-40 shrink-0 truncate">{r.actorName ?? (r.actorId ? `User #${r.actorId}` : "—")}</span>
+              <span className="font-medium w-40 shrink-0 truncate">{r.actorName ?? (r.actorId ? `User #${r.actorId}` : "System")}</span>
               <Badge variant="outline" className={r.action.startsWith("whisper") || r.action.startsWith("monitor") || r.action.includes("takeover") ? "border-whisper/40 text-whisper" : r.action === "auth.login_failed" ? "border-destructive/40 text-destructive" : ""}>
                 {LABELS[r.action] ?? r.action}
               </Badge>

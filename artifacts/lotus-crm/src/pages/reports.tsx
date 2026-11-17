@@ -8,11 +8,10 @@ import {
   useGetTagsReport,
   useGetHeatmapReport,
   useGetAgentPerformance,
-  exportReport,
   type GetChatVolumeReportParams,
 } from "@workspace/api-client-react";
 import {
-  Download,
+  FileSpreadsheet,
   TrendingUp,
   Clock,
   Users,
@@ -57,13 +56,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import {
   Area,
@@ -99,14 +92,12 @@ const PIE_COLORS = [
 const DOW_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function ReportsPage() {
-  const { toast } = useToast();
   const [range, setRange] = React.useState<DateRange>({
     from: startOfDay(subDays(new Date(), 29)),
     to: endOfDay(new Date()),
   });
   const [groupBy, setGroupBy] =
     React.useState<NonNullable<GetChatVolumeReportParams["groupBy"]>>("day");
-  const [exporting, setExporting] = React.useState(false);
 
   const params = React.useMemo(
     () => ({ from: range.from.toISOString(), to: range.to.toISOString() }),
@@ -133,28 +124,6 @@ export default function ReportsPage() {
   const { data: heatmap, isLoading: hmLoading } = useGetHeatmapReport(params);
   const { data: agentPerf, isLoading: agLoading } = useGetAgentPerformance();
 
-  const handleExport = async (
-    type: "agents" | "conversations" | "customers" | "branches" | "tags",
-  ) => {
-    setExporting(true);
-    try {
-      const csv = await exportReport({ ...params, type });
-      const blob = new Blob([csv ?? ""], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `lotus-pharmacies-${type}-${format(new Date(), "yyyy-MM-dd")}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      toast({ title: `Exported ${type}.csv successfully` });
-    } catch {
-      toast({ title: "Failed to export report", variant: "destructive" });
-    } finally {
-      setExporting(false);
-    }
-  };
 
   return (
     <div className="flex-1 space-y-6 p-8 overflow-y-auto bg-background">
@@ -170,31 +139,12 @@ export default function ReportsPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           <DateRangePicker value={range} onChange={setRange} />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" disabled={exporting}>
-                <Download className="mr-2 h-4 w-4" />
-                {exporting ? "Exporting…" : "Export CSV"}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExport("agents")}>
-                Agent performance
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport("conversations")}>
-                Conversations
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport("customers")}>
-                Customers
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport("branches")}>
-                Branches
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport("tags")}>
-                Tags
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button asChild>
+            <Link href="/reports/export">
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Export to Excel
+            </Link>
+          </Button>
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import {
   Sparkles,
   Users,
   FileBarChart,
+  FileSpreadsheet,
   Settings,
   Inbox,
   Megaphone,
@@ -146,7 +147,10 @@ function Shell({ children }: { children: React.ReactNode }) {
               />
             )}
             {perms?.canViewReports && (
-              <NavLink href="/reports" icon={FileBarChart} label="Reports" active={isActive("/reports")} />
+              <NavLink href="/reports" icon={FileBarChart} label="Reports" active={location === "/reports"} />
+            )}
+            {perms?.canViewReports && (
+              <NavLink href="/reports/export" icon={FileSpreadsheet} label="Export Reports" active={isActive("/reports/export")} />
             )}
             {user?.role === "admin" && (
               <NavLink href="/bots" icon={Bot} label="Bots" active={isActive("/bots")} />

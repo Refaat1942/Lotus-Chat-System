@@ -19,6 +19,7 @@ import DashboardPage from "@/pages/dashboard";
 import ChatPage from "@/pages/chat";
 import CustomersPage from "@/pages/customers";
 import ReportsPage from "@/pages/reports";
+import ExportReportsPage from "@/pages/export-reports";
 import SettingsPage from "@/pages/settings";
 import InsightsPage from "@/pages/insights";
 import MarketingPage from "@/pages/marketing";
@@ -72,6 +73,7 @@ function ProtectedApp() {
         <Route path="/dashboard">{() => <Guard component={DashboardPage} />}</Route>
         <Route path="/chat">{() => <Guard component={ChatPage} permission="canViewChats" />}</Route>
         <Route path="/customers">{() => <Guard component={CustomersPage} permission="canManageCustomers" />}</Route>
+        <Route path="/reports/export">{() => <Guard component={ExportReportsPage} permission="canViewReports" />}</Route>
         <Route path="/reports">{() => <Guard component={ReportsPage} permission="canViewReports" />}</Route>
         <Route path="/deliveries">{() => <Guard component={DeliveriesPage} permission="canManageCustomers" />}</Route>
         <Route path="/bots">{() => <Guard component={BotsPage} admin />}</Route>
