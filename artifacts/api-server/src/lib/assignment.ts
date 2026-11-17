@@ -34,6 +34,7 @@ import {
 } from "@workspace/db";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import type { Server as IOServer } from "socket.io";
+import { logAudit } from "./audit";
 
 /* -------------------------------------------------------------------------- */
 /*  Settings                                                                  */
@@ -156,9 +157,9 @@ export async function tryAutoAssign(
     const conv = (lockedRows.rows ?? lockedRows)[0] as
       | { id: number; assigned_agent_id: number | null; status: string; queued_at: Date | null; team_id: number | null }
       | undefined;
-    if (!conv) return { agentId: null as number | null, queued: false };
-    if (conv.assigned_agent_id) return { agentId: conv.assigned_agent_id, queued: false };
-    if (conv.status === "completed") return { agentId: null, queued: false };
+    if (!conv) return { agentId: null as number | null, queued: false, fresh: false };
+    if (conv.assigned_agent_id) return { agentId: conv.assigned_agent_id, queued: false, fresh: false };
+    if (conv.status === "completed") return { agentId: null, queued: false, fresh: false };
 
     // 2) Pick a candidate from currently-available agents.
     // Each agent's own limit (Users & Roles) wins over the global default.
@@ -178,7 +179,7 @@ export async function tryAutoAssign(
           queuedAt: conv.queued_at ? new Date(conv.queued_at) : new Date(),
         })
         .where(eq(conversationsTable.id, conversationId));
-      return { agentId: null, queued: true };
+      return { agentId: null, queued: true, fresh: false };
     }
 
     // 3) Re-verify chosen agent's load *inside the transaction* — strict
@@ -200,7 +201,7 @@ export async function tryAutoAssign(
           queuedAt: conv.queued_at ? new Date(conv.queued_at) : new Date(),
         })
         .where(eq(conversationsTable.id, conversationId));
-      return { agentId: null, queued: true };
+      return { agentId: null, queued: true, fresh: false };
     }
 
     // 4) Assign + bump agent's last-assigned timestamp.
@@ -218,8 +219,19 @@ export async function tryAutoAssign(
       .set({ lastAssignedAt: now })
       .where(eq(usersTable.id, agentId));
 
-    return { agentId, queued: false };
+    return { agentId, queued: false, fresh: true };
   });
+
+  // Automatic assignments are recorded too, so the Assigning report is complete.
+  if (result.fresh && result.agentId) {
+    void logAudit({
+      actorId: null,
+      action: "conversation.auto_assigned",
+      entityType: "conversation",
+      entityId: conversationId,
+      details: { to: result.agentId, strategy: settings.assignmentStrategy },
+    });
+  }
 
   if (io) {
     if (result.agentId) {
